@@ -8,6 +8,7 @@
 import type { Player, BeastState, SkillE } from '../core/types';
 import { addLog } from './log';
 import { beastDef, BEAST_MAP } from '../data/beasts';
+import { spiritShatter } from '../core/fx';
 
 /** 绑定伴兽（御兽门角色开局时调用） */
 export function bindBeast(p: Player, beastId: string): boolean {
@@ -36,6 +37,7 @@ export function beastAbsorb(p: Player, incoming: number): number {
     p.beast.broken = true;
     const def = BEAST_MAP[p.beast.id];
     addLog(`${p.name} 的【${def?.name ?? p.beast.id}】灵光崩散——灵兽溃散！`, 'backlash');
+    spiritShatter(document.getElementById(`seat-${p.seat}`));
   } else {
     const def = BEAST_MAP[p.beast.id];
     addLog(`【${def?.name ?? p.beast.id}】替 ${p.name} 承受 ${take} 点伤害`, 'system');

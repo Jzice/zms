@@ -23,7 +23,13 @@ export function campOf(p: Player): string {
 }
 
 function emptyFlags(): Player['flags'] {
-  return { wudaoUsed: false, hurtThisTurn: false, closedDoor: false, skillUse: {} };
+  return {
+    wudaoUsed: false,
+    hurtThisTurn: false,
+    closedDoor: false,
+    daoxinGuardUsed: false,
+    skillUse: {},
+  };
 }
 
 export function createPlayer(
@@ -35,6 +41,8 @@ export function createPlayer(
 ): Player {
   const c = charOf(charId) ?? CHARACTERS[0];
   const layer = currentLayer(c.realm, 'early');
+  // 三国杀内核：主公（本作「掌门」）公开身份，体力上限 +1
+  const baseHp = c.hp + (role === 'master' ? 1 : 0);
   return {
     seat,
     name,
@@ -45,8 +53,8 @@ export function createPlayer(
     region: c.region,
     role,
     rolePublic: false,
-    hp: c.hp,
-    maxHp: c.hp,
+    hp: baseHp,
+    maxHp: baseHp,
     hand: [],
     equips: {},
     xiuwei: 0,

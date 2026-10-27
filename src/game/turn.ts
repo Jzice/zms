@@ -13,12 +13,14 @@ import { needDiscard, closeDoor } from './actions';
 import { expireContracts } from './contract';
 import { handLimit } from './rules';
 import { sleep } from '../core/dom';
+import { drawFly, discardFly } from '../core/fx';
 
 /** 回合初状态重置 */
 export function resetTurnState(p: Player): void {
   p.flags.wudaoUsed = false;
   p.flags.hurtThisTurn = false;
   p.flags.closedDoor = false;
+  p.flags.daoxinGuardUsed = false;
   p.flags.skillUse = {};
 }
 
@@ -33,20 +35,26 @@ export function drawPhase(p: Player): void {
   G.phase = 'draw';
   drawN(p, 2);
   addLog(`${p.name} 摸 2 张牌`, 'system');
+  drawFly(p.seat, 2);
 }
 
 /** 弃牌阶段 */
 export async function discardPhase(p: Player): Promise<void> {
   G.phase = 'discard';
   let guard = 0;
+  let dropped = 0;
   while (needDiscard(p) > 0 && guard++ < 20) {
     if (!p.ai) {
       // 本地玩家：等待 UI 弃牌（简化为自动弃最早一张以避免卡死）
       await sleep(120);
     }
     const drop = p.hand.shift();
-    if (drop) G.discard.push(drop);
+    if (drop) {
+      G.discard.push(drop);
+      dropped++;
+    }
   }
+  if (dropped > 0) discardFly(p.seat);
 }
 
 /** 回合末「闭关」（可选：弃全部手牌换修为） */

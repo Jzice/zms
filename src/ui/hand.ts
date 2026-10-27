@@ -39,25 +39,35 @@ export function renderHand(): void {
     el.innerHTML = '';
     return;
   }
-  el.innerHTML = p.hand.map((c) => cardHtml(p, c)).join('');
+  const atkCapped = G.shengtongUsed >= 1;
+  el.innerHTML = p.hand.map((c) => cardHtml(p, c, atkCapped)).join('');
 }
 
-function cardHtml(p: Player, c: Card): string {
+function cardHtml(p: Player, c: Card, atkCapped = false): string {
   const isWudao = c.sub === 'wudao';
+  const isAtk = c.sub === 'shengtong' || c.sub === 'huo' || c.sub === 'lei';
   let disabled = false;
   let tip = c.desc ?? '';
+  if (isAtk && atkCapped) {
+    disabled = true;
+    tip = '本回合已出过神通（每回合限 1 张）';
+  }
   if (isWudao) {
     const chk = canUseWudao(p);
     disabled = !chk.ok;
     if (disabled) tip = `无法打出：${chk.reasons.join('、')}`;
   }
   const sel = selectedCard === c.id;
+  const isRed = c.suit === '♥' || c.suit === '♦';
+  const tone = isRed ? 'red' : 'black';
   return `
-  <div class="card ${sel ? 'card-sel' : ''} ${disabled ? 'card-disabled' : ''}"
+  <div class="card ${tone} ${sel ? 'card-sel' : ''} ${disabled ? 'card-disabled' : ''}"
        style="--c:${subColor(c.sub)}" title="${escapeHtml(tip)}"
        onclick="selectCard(${c.id})">
-    <div class="card-name">${escapeHtml(c.name)}</div>
-    <div class="card-sub">${escapeHtml(subLabel(c.sub))}</div>
+    <span class="suit">${c.suit}</span>
+    <span class="num">${c.num}</span>
+    <span class="cname">${escapeHtml(c.name)}</span>
+    <span class="ctype">${escapeHtml(subLabel(c.sub))}</span>
   </div>`;
 }
 
@@ -97,6 +107,7 @@ export function renderActionHint(): void {
   const p = localPlayer();
   if (!p) return;
   const msgs: string[] = [];
+  if (G.current === p.seat && G.phase === 'play' && G.shengtongUsed >= 1) msgs.push('本回合神通已用过');
   if (selectedCard) msgs.push('已选牌，点击座位选目标后「出牌」');
   if (needDiscard(p) > 0) msgs.push(`需弃 ${needDiscard(p)} 张（手牌上限 ${p.hp}）`);
   const chk = canBreakthrough(p);

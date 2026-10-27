@@ -6,7 +6,7 @@ import './style.css';
 
 import { G, resetG } from './game/state';
 import { render, setScreen } from './ui/render';
-import { renderLobby, getSelections, playerCount } from './ui/lobby';
+import { renderLobby, getSelections, playerCount, setLobbyMode } from './ui/lobby';
 import {
   selectCard,
   confirmPlay,
@@ -146,6 +146,13 @@ window.startSingle = function (): void {
   launchGame(playerCount());
 };
 
+/** 第一屏选定模式 → 进入第二屏对局设置 */
+window.enterSetup = function (mode: 'single' | 'net'): void {
+  setLobbyMode(mode);
+  setScreen('setup');
+  render();
+};
+
 window.createRoomUI = async function (): Promise<void> {
   try {
     const info = await createRoom();
@@ -197,13 +204,13 @@ window.backToLobby = function (): void {
   closeSettle();
   resetG();
   setScreen('lobby');
-  renderLobby();
+  render();
 };
 
 window.exitGame = function (): void {
   resetG();
   setScreen('lobby');
-  renderLobby();
+  render();
 };
 
 window.sendChat = function (): void {

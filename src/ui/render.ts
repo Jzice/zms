@@ -11,23 +11,27 @@ import { renderSettle } from './settle';
 import { pendingChoice } from '../game/choice';
 import { escapeHtml } from '../core/dom';
 
-let screen: 'lobby' | 'game' = 'lobby';
+let screen: 'lobby' | 'setup' | 'game' = 'lobby';
 
-export function setScreen(s: 'lobby' | 'game'): void {
+export function setScreen(s: 'lobby' | 'setup' | 'game'): void {
   screen = s;
   const l = document.getElementById('screenLobby');
+  const st = document.getElementById('screenSetup');
   const g = document.getElementById('screenGame');
   if (l) l.classList.toggle('active', s === 'lobby');
+  if (st) st.classList.toggle('active', s === 'setup');
   if (g) g.classList.toggle('active', s === 'game');
+  const tb = document.getElementById('topBar');
+  if (tb) tb.classList.toggle('in-game', s === 'game');
 }
 
-export function currentScreen(): 'lobby' | 'game' {
+export function currentScreen(): 'lobby' | 'setup' | 'game' {
   return screen;
 }
 
 export function render(): void {
   renderTopBar();
-  if (screen === 'lobby') {
+  if (screen === 'lobby' || screen === 'setup') {
     renderLobby();
     return;
   }

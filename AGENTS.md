@@ -55,7 +55,7 @@ Detailed docs live in `docs/game/`: [游戏机制.md](docs/game/游戏机制.md)
 - `llm/` — the LLM-takeover decision chain: `types.ts` / `config.ts` (localStorage) / `client.ts` (fetch + timeout) / `agent.ts` (routing + bad-decision demotion) / `prompts.ts` (context assembly, cultivation terminology).
 - `net/` — `protocol.ts` (typed message union — extend this first when adding networked features), `network.ts` (host-authoritative sync), `rooms.ts`, `peer.cdn.ts` / `peer.bundled.ts`.
 - `profile/` — localStorage profile (`zhangmensha_profile_v1`): name/avatar/score/wins/games + `themeMode` + `themeStyle`.
-- `ui/` — `render.ts` (single top-level `render()`), `lobby.ts`, `playzone.ts` (seat ring / table layout), `hand.ts`, `modals.ts`, `settle.ts`, `theme.ts`, `llmSettings.ts`.
+- `ui/` — `render.ts` (single top-level `render()`; screens `lobby` / `setup` / `game`), `lobby.ts` (两屏：主界面选模式 → 对局设置), `playzone.ts` (`.p-card` seat ring / table layout), `hand.ts`, `modals.ts`, `settle.ts`, `theme.ts`, `llmSettings.ts`.
 - `style.css` — hand-written CSS with CSS-variable tokens; **do not introduce a Tailwind/framework CDN** (it would break artifact self-containment).
 
 ## Critical Invariants
@@ -65,11 +65,15 @@ Detailed docs live in `docs/game/`: [游戏机制.md](docs/game/游戏机制.md)
 3. **Module cycles are intentional** (ui ↔ game ↔ net ↔ llm). They are safe ONLY because no module has top-level side effects except `main.ts`; cross-module calls happen inside function bodies. Never add top-level code that touches another module's bindings.
 4. **Mutable shared state ownership**: `G.logs` / `G.chat` / `ROLE_MARKS` / `SELECTED_*` / LLM failure streaks / `aibrain` beliefs are each owned by one module; others read via live bindings or call exported mutators (`resetLlmFailStreak`, `resetBrain`, ...). Do not assign to imported bindings.
 5. **Magic numbers are load-bearing**: 80ms sync debounce, 6-digit room codes, deck composition (30 神通 / 15 护身 / 8 灵丹 / 5 灵药 / 8 悟道 / 49 符篆阵法秘术 / 13 法宝 / 10 灵地 = **138**), the `SOUL_BACKLASH_LETHAL = false` balance toggle, `mingli` limits, realm thresholds.
+   - **Combat HP is fixed at 3–4** (`characters.ts` `HP_BASE`: 练气/筑基 3，金丹及以上 4) **+1 for 掌门** (`setup.createPlayer`); HP **must not grow** on breakthrough (`realm.ts`) — this is the Sanguosha-style pacing invariant.
+   - **`SHENGTONG_PER_TURN = 1`** (`rules.ts`): at most one 神通 per turn. Removing this cap makes a single turn able to burst-kill (games collapse to 2–6 turns).
+   - **Damage floor**: 法宝 (护身/秘宝合计 −1) + 被动减伤 cannot reduce a hit below **1**; only 道心 can fully negate, and 道心抵伤 is **once per turn** (`flags.daoxinGuardUsed`).
 6. **Terminology compliance**: never introduce a term absent from `docs/`. The banned-word list is enforced by `npm run smoke:roster` and `npm run smoke:cards`.
 7. **Roster integrity**: 116 playable characters, 4 camps (human / beast / moxiu / guixiu). `npm run smoke:roster` asserts the count, id/name uniqueness, and that every referenced skill / power / region / beast exists. 血魔井 is an **item** (法宝 card), never a character; 姜炎 is a **散修** (human camp, `power: 'sanxiu'`), never a 鬼修.
 8. **AI dual mechanism**: `ai.ts` exposes `enumerateActions()` / `executeAction()`; `aiPlay()` routes to the LLM only when `p.aiMode === 'llm'` **and** `llmReady()` is true, otherwise it falls back to the heuristic path. A timeout / exception / illegal output must never deadlock the game — the fallback and `demoteLlmSeat` are load-bearing.
 9. **Table vs list rendering**: `playzone.ts` always writes inline `left/top` seat coordinates for the desktop elliptical table. The small-screen list mode overrides them with `!important` in `style.css` (`position:static !important; left:auto !important; top:auto !important`). **The two are a matched pair** — removing the `!important` makes seats misalign on narrow screens, and removing the inline coordinates breaks the desktop table.
 10. **Theme system**: `body[data-mode]` (day/night/dusk) × `body[data-theme]` (jade/gold/azure/purple/red/green) drives all colors through CSS variables; the choice is persisted in the profile and an inline first-frame script in `index.html` prevents a flash of the wrong theme.
+11. **FX layer is cosmetic-only and sim-guarded**: every animation in `core/fx.ts` mounts into `#fxLayer` via one `push()` helper and returns early when `isSim()` is true. FX must never await, mutate game state, or throw under the headless DOM stub — `seatAnchor`/`elAnchor` already guard missing `getBoundingClientRect`. Add new effects to `fx.ts` + the `特效层` CSS block, then wire them at the event site (`damage.ts` / `actions.ts` / `turn.ts` / `contract.ts` / `beasts.ts` / `skillEngine.ts` / `settle.ts`).
 
 ## Verification Checklist
 

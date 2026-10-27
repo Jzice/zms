@@ -12,6 +12,7 @@ import type { Player, ContractState } from '../core/types';
 import { G } from './state';
 import { addLog } from './log';
 import { CONTRACT_MAP, SOUL_BACKLASH_LETHAL } from '../data/contracts';
+import { coolBreeze, heartLock, ghostShadow } from '../core/fx';
 import { roleDef } from '../data/roles';
 
 let CID = 1;
@@ -82,6 +83,10 @@ export function signContract(a: Player, b: Player, defId: string): ContractState
     `${a.name} 与 ${b.name} 以真名录于羊皮纸，立【${def.name}】；凉风扫过，心头锁成。`,
     'contract',
   );
+  // 视觉：凉风扫过（青白流光横贯双方）+ 心头锁落下
+  coolBreeze(document.getElementById(`seat-${a.seat}`), document.getElementById(`seat-${b.seat}`));
+  heartLock(a.seat);
+  heartLock(b.seat);
   return c;
 }
 
@@ -108,6 +113,9 @@ export function breakContract(contractId: string, breaker: Player): void {
       pc.brokenBy = breaker.seat;
     }
   }
+
+  // 视觉：契约鬼以尖头鬼影现于违约者印堂之上
+  ghostShadow(document.getElementById(`seat-${breaker.seat}`));
 
   const oversees = gongzhengguiOversees();
   const lethal = SOUL_BACKLASH_LETHAL || oversees.heavierBacklash;

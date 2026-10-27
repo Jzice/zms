@@ -56,12 +56,45 @@
   </div>
 </div>
 
-<!-- 大厅 -->
+<!-- 主界面（第一屏）：个人名片 + 阵营地域快速筛选 + 模式选择 -->
 <div id="screenLobby" class="screen active">
   <div class="panel">
-    <h3>◈ 选择阵营与地域 ◈</h3>
+    <div class="name-card">
+      <div class="nc-avatar" id="lobbyAvatar">🧙</div>
+      <div class="nc-main">
+        <div class="nc-name" id="lobbyName">本座</div>
+        <div class="nc-level" id="lobbyLevel">练气 · 0 分</div>
+        <div class="nc-stats" id="lobbyStats">胜场 0 · 对局 0</div>
+      </div>
+    </div>
+  </div>
+  <div class="panel">
+    <h3>◈ 选择阵营与地域 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400">（用于下一步筛选角色）</span></h3>
     <div class="opt-row" id="campPicker"></div>
     <div class="opt-row" id="regionPicker"></div>
+  </div>
+  <div class="panel">
+    <h3>◈ 选择游戏模式 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400">（选择后进入对局设置）</span></h3>
+    <div class="mode-cards" id="modePicker">
+      <button class="mode-card" data-mode="single" onclick="enterSetup('single')">
+        <span class="mc-icon">🎮</span>
+        <span class="mc-title">单机对局</span>
+        <span class="mc-desc">与 AI 修士同场博弈</span>
+      </button>
+      <button class="mode-card" data-mode="net" onclick="enterSetup('net')">
+        <span class="mc-icon">🌐</span>
+        <span class="mc-title">联机对战</span>
+        <span class="mc-desc">创建房间或输入房号加入</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- 对局设置（第二屏）：势力 / 角色 / 伴兽 / 身份池 / 人数 / 联机 -->
+<div id="screenSetup" class="screen">
+  <div class="setup-top">
+    <button class="btn btn-sm" onclick="backToLobby()">‹ 返回主界面</button>
+    <span class="setup-title" id="setupTitle">对局设置</span>
   </div>
   <div class="panel">
     <h3>◈ 势力层级 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400">（超级宗门 / 宗门 / 家族 / 附庸）</span></h3>
@@ -82,7 +115,7 @@
     <div class="scope-hint" id="roleQuotaHint"></div>
   </div>
   <div class="panel">
-    <h3>◈ 对局设置 ◈</h3>
+    <h3>◈ 玩家总数 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400">（拖动滑块选择 4–10 人）</span></h3>
     <div class="slider-row">
       <span class="slider-end">4</span>
       <input type="range" id="countSlider" min="4" max="10" step="1" value="6">
@@ -90,10 +123,10 @@
       <span class="slider-value" id="countValue">6 人</span>
     </div>
     <div class="lobby-btns">
-      <button class="btn btn-accent btn-cta" onclick="startSingle()">▶ 开始单机对局</button>
+      <button class="btn btn-accent btn-cta" id="startBtn" onclick="startSingle()">▶ 开始单机对局</button>
     </div>
   </div>
-  <div class="panel">
+  <div class="panel" id="netPanel">
     <h3>◈ 联机对战 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400">（6 位房号，房主权威同步）</span></h3>
     <div class="input-row">
       <input type="text" id="joinCode" placeholder="6 位房间号" maxlength="6" inputmode="numeric">

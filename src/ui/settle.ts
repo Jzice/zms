@@ -8,6 +8,11 @@ import { charOf } from '../data/characters';
 import { realmLabel } from '../data/realms';
 import { highestLingdiTier } from '../data/lingdi';
 import { campName } from '../data/camps';
+import { ROLE_MAP } from '../data/roles';
+import { resultBanner, victoryFx } from '../core/fx';
+
+/** 结算特效只播一次（render 会多次调用 renderSettle） */
+let fxSettle: unknown = null;
 
 export function renderSettle(): void {
   const s = G.settle;
@@ -44,8 +49,22 @@ export function renderSettle(): void {
     <div class="st-lines">${s.lines.map((l) => `<div class="st-line">${escapeHtml(l)}</div>`).join('')}</div>
     <div class="st-table">${rows}</div>`;
   show('settleModal', true);
+
+  if (fxSettle !== s) {
+    fxSettle = s;
+    const me = G.players.find((p) => !p.ai);
+    const win = !!me && s.winners.includes(me.seat);
+    resultBanner(s.title, win);
+    if (win && me) {
+      const side = ROLE_MAP[me.role]?.side;
+      victoryFx(side === 'waidao' ? 'waidao' : side === 'yinni' ? 'yinni' : 'zhengdao');
+    } else {
+      victoryFx('lose');
+    }
+  }
 }
 
 export function closeSettle(): void {
   show('settleModal', false);
+  fxSettle = null;
 }

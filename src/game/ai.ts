@@ -12,7 +12,7 @@ import { canUseWudao } from './wudao';
 import { canUseSkill, useSkill, applyEffects } from './skillEngine';
 import { canUseBeastSkill, useBeastSkill } from './beasts';
 import { canSign } from './contract';
-import { canTargetShengtong } from './rules';
+import { canTargetShengtong, canPlayShengtong } from './rules';
 import { CONTRACT_DEFS } from '../data/contracts';
 import { charOf } from '../data/characters';
 import { campOf } from './setup';
@@ -84,7 +84,7 @@ export function enumerateActions(p: Player): AiAction[] {
 
   // ⑦ 神通攻击（取最佳目标）
   const shengtong = p.hand.find((x) => x.sub === 'shengtong' || x.sub === 'huo' || x.sub === 'lei');
-  if (shengtong) {
+  if (shengtong && canPlayShengtong()) {
     const t = bestTarget(p);
     if (t) acts.push({ value: `shengtong:${shengtong.id}:${t.seat}`, label: `神通·${shengtong.name}` });
   }

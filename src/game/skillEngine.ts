@@ -10,6 +10,7 @@ import { beastPassiveEffects } from './beasts';
 import { charOf } from '../data/characters';
 import { SKILL_MAP } from '../data/skilldefs';
 import { addLog } from './log';
+import { skillRipple } from '../core/fx';
 
 /** 汇总某角色的被动修正值 */
 export function passiveMod(p: Player, key: 'distMod' | 'rangeMod' | 'reduceDamage' | 'handLimit'): number {
@@ -99,6 +100,7 @@ export function useSkill(p: Player, skillId: string, targetSeat?: number, boost 
   }
   p.flags.skillUse[skillId] = (p.flags.skillUse[skillId] ?? 0) + 1;
   addLog(`${p.name} 发动【${def.name}】`, 'system');
+  skillRipple(p.seat);
   applyEffects(p, def.effects, targetSeat);
   return true;
 }

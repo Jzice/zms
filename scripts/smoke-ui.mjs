@@ -53,6 +53,28 @@ check(lobby.charCount > 10, `角色网格已渲染（${lobby.charCount} 名）`)
 check(lobby.powerTiers >= 4, `势力层级树已渲染（${lobby.powerTiers} 层）`);
 check(lobby.roleSides === 4, `身份池四方已渲染（${lobby.roleSides} 方）`);
 
+console.log('\n=== 两屏流程（主界面 → 对局设置 → 返回） ===');
+const setupFlow = await page.evaluate(() => {
+  window.enterSetup('single');
+  const setupActive = !!document.getElementById('screenSetup')?.classList.contains('active');
+  const lobbyHidden = !document.getElementById('screenLobby')?.classList.contains('active');
+  const title = document.getElementById('setupTitle')?.textContent ?? '';
+  const netHidden = document.getElementById('netPanel')?.style.display === 'none';
+  const chars = document.getElementById('charGrid')?.children.length ?? 0;
+  window.enterSetup('net');
+  const netShown = document.getElementById('netPanel')?.style.display !== 'none';
+  const netTitle = document.getElementById('setupTitle')?.textContent ?? '';
+  window.backToLobby();
+  const backLobby = !!document.getElementById('screenLobby')?.classList.contains('active');
+  return { setupActive, lobbyHidden, title, netHidden, chars, netShown, netTitle, backLobby };
+});
+check(setupFlow.setupActive && setupFlow.lobbyHidden, '第一屏 → 第二屏切换生效');
+check(setupFlow.chars > 10, `第二屏角色网格已渲染（${setupFlow.chars} 名）`);
+check(setupFlow.title.includes('单机'), `第二屏标题随模式变化（${setupFlow.title}）`);
+check(setupFlow.netHidden, '单机模式下隐藏联机配置面板');
+check(setupFlow.netShown && setupFlow.netTitle.includes('联机'), '联机模式下显示联机面板且标题联动');
+check(setupFlow.backLobby, '第二屏可返回第一屏');
+
 console.log('\n=== 主题 / 大模型面板 ===');
 const themeOk = await page.evaluate(() => {
   window.openThemePanel();

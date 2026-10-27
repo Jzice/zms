@@ -78,7 +78,7 @@ export default async function run() {
   const ok = breakthroughRealm(p);
   check(ok, '境界突破执行成功');
   console.log(`突破后：${p.realm} ${p.realmStage} ｜ 寿元上限 ${beforeHp} → ${p.maxHp} ｜ 灵力上限 ${beforeLingli} → ${lingliMax(p)}`);
-  check(p.maxHp >= beforeHp, '寿元上限未降低');
+  check(p.maxHp === beforeHp, '血量上限不随突破增长（三国杀内核）');
   check(p.xiuwei === 0, '突破后修为清零');
 
   return { fails };

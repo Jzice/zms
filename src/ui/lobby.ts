@@ -11,6 +11,7 @@ import { CHARACTERS, charOf, needsBeast } from '../data/characters';
 import { BEASTS, beastPoolFor } from '../data/beasts';
 import { ROLE_DEFS, SIDE_NAME, SIDE_COLOR } from '../data/roles';
 import { roleQuota } from '../game/roles';
+import { loadProfile, levelOf } from '../profile/profile';
 import { render } from './render';
 
 /* ---------------- 选择状态（本模块所有） ---------------- */
@@ -19,6 +20,15 @@ let selRegion: Region | 'all' = 'all';
 let selChar: string | null = null;
 let selBeast: Record<string, string> = {};
 let enabledRoles: string[] = ROLE_DEFS.filter((r) => r.defaultOn).map((r) => r.id);
+/** 第一屏所选模式：单机 / 联机（决定第二屏标题与主按钮行为） */
+let lobbyMode: 'single' | 'net' = 'single';
+
+export function setLobbyMode(m: 'single' | 'net'): void {
+  lobbyMode = m;
+}
+export function getLobbyMode(): 'single' | 'net' {
+  return lobbyMode;
+}
 
 export function getSelections() {
   return { selCamp, selRegion, selChar, selBeast, enabledRoles };
@@ -53,6 +63,7 @@ export function playerCount(): number {
 /* ---------------- 渲染 ---------------- */
 
 export function renderLobby(): void {
+  renderNameCard();
   renderCampPicker();
   renderRegionPicker();
   renderPowerTree();
@@ -60,6 +71,39 @@ export function renderLobby(): void {
   renderBeastPanel();
   renderRolePool();
   renderCountHint();
+  renderSetupChrome();
+}
+
+/** 第一屏个人名片（档案来自 profile 模块） */
+function renderNameCard(): void {
+  const p = loadProfile();
+  const av = document.getElementById('lobbyAvatar');
+  const nm = document.getElementById('lobbyName');
+  const lv = document.getElementById('lobbyLevel');
+  const st = document.getElementById('lobbyStats');
+  if (av) av.textContent = p.avatar;
+  if (nm) nm.textContent = p.name;
+  if (lv) lv.textContent = `${levelOf(p.score)} · ${p.score} 分`;
+  if (st) st.textContent = `胜场 ${p.wins} · 对局 ${p.games}`;
+}
+
+/** 第二屏随模式变化的标题 / 主按钮 / 联机面板 */
+function renderSetupChrome(): void {
+  const isNet = lobbyMode === 'net';
+  const title = document.getElementById('setupTitle');
+  if (title) title.textContent = isNet ? '联机对战 · 对局设置' : '单机对局 · 对局设置';
+
+  const startBtn = document.getElementById('startBtn');
+  if (startBtn) {
+    startBtn.textContent = isNet ? '📡 创建房间（房主）' : '▶ 开始单机对局';
+    startBtn.setAttribute('onclick', isNet ? 'createRoomUI()' : 'startSingle()');
+  }
+  const netPanel = document.getElementById('netPanel');
+  if (netPanel) netPanel.style.display = isNet ? '' : 'none';
+
+  document.querySelectorAll('#modePicker .mode-card').forEach((el) => {
+    el.classList.toggle('active', el.getAttribute('data-mode') === lobbyMode);
+  });
 }
 
 function renderCampPicker(): void {

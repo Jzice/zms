@@ -1,7 +1,7 @@
 {
   "name": "zhangmensha",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "description": "掌门杀 · 修真门派掌门路主题身份竞技卡牌游戏（三国杀机制 + 修真世界观，构建为单 HTML）",
   "scripts": {

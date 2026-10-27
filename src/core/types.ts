@@ -278,6 +278,8 @@ export interface PlayerFlags {
   hurtThisTurn: boolean;
   /** 本回合是否已闭关 */
   closedDoor: boolean;
+  /** 本回合是否已用道心抵挡伤害（每回合限 1 次） */
+  daoxinGuardUsed: boolean;
   /** 本回合已发动技能次数（key = skillId 或 beast_<id>） */
   skillUse: Record<string, number>;
 }

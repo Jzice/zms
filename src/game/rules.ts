@@ -52,6 +52,14 @@ export function canTargetShengtong(from: Player, to: Player): boolean {
   return distanceTo(from, to) <= attackRange(from);
 }
 
+/** 每回合神通上限（对齐三国杀「每回合限一张【杀】」，防止一回合多牌斩杀） */
+export const SHENGTONG_PER_TURN = 1;
+
+/** 本回合是否还能打出神通 */
+export function canPlayShengtong(): boolean {
+  return G.shengtongUsed < SHENGTONG_PER_TURN;
+}
+
 /** 手牌上限 = 寿元（三国杀内核）+ 被动修正 */
 export function handLimit(p: Player): number {
   let n = p.hp;

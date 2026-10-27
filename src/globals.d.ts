@@ -33,6 +33,7 @@ declare global {
     toggleRole(id: string): void;
 
     /* 对局 */
+    enterSetup(mode: 'single' | 'net'): void;
     startSingle(): void;
     createRoomUI(): void;
     joinRoomUI(): void;

@@ -22,6 +22,13 @@ export default async function run() {
   check(CHARACTERS.find((c) => c.id === 'jiangyan')?.power === 'sanxiu', '姜炎归属散修（power=sanxiu，非鬼修）');
   check(!CHARACTERS.some((c) => c.id === 'jiangyan' && c.camp === 'guixiu'), '姜炎已移出鬼修');
 
+  // 血量对齐三国杀：全部角色 3–4 点体力
+  const hpSet = [...new Set(CHARACTERS.map((c) => c.hp))].sort();
+  check(
+    CHARACTERS.every((c) => c.hp >= 3 && c.hp <= 4),
+    `角色血量收敛在 3–4（实际取值 ${hpSet.join('/')}）`,
+  );
+
   // 血魔井应为法宝道具（cards），而非角色
   const CARD_DEFS = buildDeck();
   check(CARD_DEFS.some((c) => c.name === '血魔井' && c.type === 'faqi'), '血魔井已作为法宝道具存在');

@@ -8,13 +8,24 @@ import type { Player, Card, CardSub } from '../core/types';
 import { G, drawN } from './state';
 import { addLog } from './log';
 import { applyDamage, heal } from './damage';
-import { canTargetShengtong, handLimit } from './rules';
+import { canTargetShengtong, handLimit, canPlayShengtong } from './rules';
 import { judgeWudao, canUseWudao } from './wudao';
 import { signContract, canSign } from './contract';
 import { breakthroughRealm, canBreakthrough, requiredLingdiTier } from './realm';
 import { lingdiTierOf } from '../data/cards';
 import { sfx } from '../core/sound';
-import { floatText, inkBurst, goldGuard } from '../core/fx';
+import {
+  floatText,
+  attackLunge,
+  swordSlash,
+  shieldRing,
+  trickCast,
+  aoeWave,
+  equipFx,
+  wudaoGlow,
+  breakthroughPillar,
+  judgeFlip,
+} from '../core/fx';
 
 /** 灵药：本回合神通伤害 +1（简化：直接额外回复 1 灵力并记录） */
 export function playLingyao(p: Player): void {
@@ -24,20 +35,22 @@ export function playLingyao(p: Player): void {
 
 /** 神通：指定目标，对方须打出护身 */
 export function playShengtong(p: Player, card: Card, targetSeat: number): boolean {
+  if (!canPlayShengtong()) return false;
   const target = G.players.find((x) => x.seat === targetSeat);
   if (!target || !canTargetShengtong(p, target)) return false;
   G.shengtongUsed += 1;
   sfx('play');
+  attackLunge(p.seat);
   const shieldIdx = target.hand.findIndex((c) => c.sub === 'hushen');
   if (shieldIdx >= 0) {
     const shield = target.hand.splice(shieldIdx, 1)[0];
     G.discard.push(shield);
     addLog(`${target.name} 打出【护身】，挡下 ${p.name} 的神通`, 'system');
-    goldGuard(document.getElementById(`seat-${target.seat}`));
+    shieldRing(target.seat);
     return true;
   }
   const dmg = 1 + (card.sub === 'huo' || card.sub === 'lei' ? 1 : 0);
-  inkBurst(document.getElementById(`seat-${target.seat}`));
+  swordSlash(target.seat, card.sub === 'huo' ? 'fire' : card.sub === 'lei' ? 'thunder' : 'normal');
   applyDamage(target, dmg, card.damageType ?? 'normal', p);
   return true;
 }
@@ -62,6 +75,7 @@ export function equipFaqi(p: Player, card: Card): void {
   }
   p.equips[slot] = card;
   addLog(`${p.name} 装备【${card.name}】`, 'system');
+  equipFx(p.seat, card.name);
 }
 
 /** 灵地：占据 */
@@ -69,6 +83,7 @@ export function occupyLingdi(p: Player, card: Card): void {
   const id = card.name;
   if (!p.lingdi.includes(id)) p.lingdi.push(id);
   addLog(`${p.name} 占据灵地【${id}】（${lingdiTierOf(id)} 阶）`, 'system');
+  floatText(document.getElementById(`seat-${p.seat}`), `灵地 ${lingdiTierOf(id)} 阶`, '#C8A24A');
 }
 
 /** 符篆 / 阵法 / 秘术 效果 */
@@ -78,11 +93,13 @@ export function playTrick(p: Player, card: Card, targetSeat?: number): boolean {
     case '储物袋':
       drawN(p, 2);
       addLog(`${p.name} 使用【储物袋】，摸 2 张牌`, 'system');
+      trickCast(p.seat, card.name, '#2bbfa8');
       return true;
     case '破阵符':
       if (!target || target.hand.length === 0) return false;
       target.hand.pop();
       addLog(`${p.name} 以【破阵符】弃置 ${target.name} 一张牌`, 'system');
+      trickCast(target.seat, card.name, '#7ab8ff');
       return true;
     case '心生蜂云剑':
       if (!target || target.hand.length === 0) return false;
@@ -91,6 +108,7 @@ export function playTrick(p: Player, card: Card, targetSeat?: number): boolean {
         if (taken) p.hand.push(taken);
       }
       addLog(`${p.name} 以【心生蜂云剑】取得 ${target.name} 一张牌`, 'system');
+      trickCast(target.seat, card.name, '#b57fff');
       return true;
     case '幻影夺心刺': {
       if (!target) return false;
@@ -103,6 +121,7 @@ export function playTrick(p: Player, card: Card, targetSeat?: number): boolean {
       if (pa < 0) applyDamage(p, 1, 'normal', target);
       else if (pb < 0) applyDamage(target, 1, 'normal', p);
       addLog(`${p.name} 与 ${target.name} 斗法`, 'system');
+      trickCast(target.seat, card.name, '#9b59b6');
       return true;
     }
     case '十方风火归元大阵':
@@ -113,6 +132,11 @@ export function playTrick(p: Player, card: Card, targetSeat?: number): boolean {
         else applyDamage(other, 1, 'fire', p);
       }
       addLog(`${p.name} 布下【十方风火归元大阵】`, 'system');
+      aoeWave(
+        p.seat,
+        G.players.filter((o) => o.seat !== p.seat && o.alive).map((o) => o.seat),
+        '#ff7a3c',
+      );
       return true;
     case '万剑钻心':
       for (const other of G.players) {
@@ -122,10 +146,20 @@ export function playTrick(p: Player, card: Card, targetSeat?: number): boolean {
         else applyDamage(other, 1, 'normal', p);
       }
       addLog(`${p.name} 施展【万剑钻心】`, 'system');
+      aoeWave(
+        p.seat,
+        G.players.filter((o) => o.seat !== p.seat && o.alive).map((o) => o.seat),
+        '#cfd8e3',
+      );
       return true;
     case '三木回心阵':
       for (const other of G.players) if (other.alive) heal(other, 1);
       addLog(`${p.name} 布下【三木回心阵】，众人回寿`, 'system');
+      aoeWave(
+        p.seat,
+        G.players.filter((o) => o.alive).map((o) => o.seat),
+        '#5fd07a',
+      );
       return true;
     case '命隐符':
       addLog(`${p.name} 祭出【命隐符】，抵消一次符篆`, 'system');
@@ -136,6 +170,7 @@ export function playTrick(p: Player, card: Card, targetSeat?: number): boolean {
       return true;
     case '碧火幽魂刀':
       if (!target) return false;
+      swordSlash(target.seat, 'fire');
       applyDamage(target, 1, 'fire', p);
       addLog(`${p.name} 以【碧火幽魂刀】攻 ${target.name}`, 'system');
       return true;
@@ -146,6 +181,7 @@ export function playTrick(p: Player, card: Card, targetSeat?: number): boolean {
       addLog(`${p.name} 布下【乌茎泽兰】`, 'system');
       return true;
     default:
+      trickCast(target?.seat ?? p.seat, card.name);
       return true;
   }
 }
@@ -165,12 +201,15 @@ export function playWudao(p: Player): boolean {
   const chk = canUseWudao(p);
   if (!chk.ok) return false;
   const r = judgeWudao(p);
+  if (r.judgeCard) judgeFlip(p.seat, r.judgeCard);
+  wudaoGlow(p.seat, r.success);
   if (r.success) {
     sfx('wudao');
     floatText(document.getElementById(`seat-${p.seat}`), `修为 +${r.xiuweiGain} 道心 +${r.daoxinGain}`);
     // 悟道成功且满足条件 → 境界突破
     if (canBreakthrough(p).ok) {
       breakthroughRealm(p);
+      breakthroughPillar(p.seat);
       sfx('breakthrough');
     }
   } else {

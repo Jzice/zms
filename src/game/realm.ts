@@ -64,10 +64,12 @@ export function requiredLingdiTier(p: Player): number {
 
 /**
  * 境界突破：收益集中结算
- *   寿元上限 +1 且当前寿元 +1（docs 寿元之增）
  *   灵力上限 +1（丹田灵力池扩大）
  *   开启本命天赋（awakenSkill）
  *   展示诗词感悟 + 战报
+ *
+ * ⚠ 平衡标定：**寿元 / 血量上限不随突破增长**（对齐三国杀「血量固定」内核）。
+ *   早期版本跨境突破 +1 上限，会把单局拉长到 20+ 回合；现已取消。
  */
 export function breakthroughRealm(p: Player): boolean {
   const check = canBreakthrough(p);
@@ -76,16 +78,11 @@ export function breakthroughRealm(p: Player): boolean {
   if (!next) return false;
 
   const from = realmLabel(p.realm, p.realmStage);
-  const crossRealm = next.realm !== p.realm;
 
   p.realm = next.realm;
   p.realmStage = next.stage;
   p.xiuwei = 0;
 
-  if (crossRealm) {
-    p.maxHp += 1;
-    p.hp = Math.min(p.maxHp, p.hp + 1);
-  }
   // 灵力上限随层级提升
   const layer = currentLayer(p.realm, p.realmStage);
   p.lingli = Math.min(layer.lingliMax, p.lingli + 1);

@@ -41,13 +41,17 @@ const DEFAULT_AVATAR: Record<RealmId, string> = {
   huashen: '👑',
 };
 
-/** 寿元基线（按境界，docs 修行体系：练气120/筑基200/金丹500/元婴2000） */
+/**
+ * 战斗血量基线（三国杀内核：3–4 点体力，化神不再多给）。
+ * 注意：此处是「战斗血量」，与 docs 修行体系里的「寿元 120/200/500/2000」不是同一量纲；
+ * 寿元仅作为境界设定文案（realms.lifespan），不参与伤害与手牌上限计算。
+ */
 const HP_BASE: Record<RealmId, number> = {
   lianqi: 3,
   zhuji: 3,
   jindan: 4,
   yuanying: 4,
-  huashen: 5,
+  huashen: 4,
 };
 
 function c(init: CharInit): Character {
