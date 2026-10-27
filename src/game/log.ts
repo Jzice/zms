@@ -9,8 +9,9 @@ const MAX_LOG = 100;
 export function addLog(
   text: string,
   kind: LogEntry['kind'] = 'normal',
+  seat?: number,
 ): void {
-  G.logs.push({ t: Date.now(), text, kind });
+  G.logs.push({ t: Date.now(), text, kind, seat });
   if (G.logs.length > MAX_LOG) G.logs.splice(0, G.logs.length - MAX_LOG);
 }
 

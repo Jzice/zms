@@ -5,7 +5,7 @@
 import './style.css';
 
 import { G, resetG } from './game/state';
-import { render, setScreen } from './ui/render';
+import { render, setScreen, markChatSeen, markNotifySeen } from './ui/render';
 import { renderLobby, getSelections, playerCount, setLobbyMode } from './ui/lobby';
 import {
   selectCard,
@@ -41,7 +41,7 @@ import {
 } from './ui/lobby';
 import { startGame, applyLlmModes } from './game/setup';
 import { gameLoop } from './game/loop';
-import { setSound, isSoundOn } from './core/sound';
+import { setSound, isSoundOn, sfx } from './core/sound';
 import { togglePanel } from './core/dom';
 import { pushChat } from './game/chat';
 import { setRoleMark } from './game/marks';
@@ -71,9 +71,47 @@ window.toggleSound = function (): void {
   const p = loadProfile();
   p.sound = !p.sound;
   saveProfile(p);
+  // 先按新状态播放提示音，再切换开关（关闭时仍能听到最后一声）
+  setSound(true);
+  sfx('toggle');
   setSound(p.sound);
   const btn = document.getElementById('soundToggle');
   if (btn) btn.textContent = p.sound ? '🔊' : '🔇';
+};
+
+/* ---------------- 消息通知 / 小屏聊天 ---------------- */
+
+window.toggleNotifyPanel = function (): void {
+  const p = document.getElementById('notifyPanel');
+  if (!p) return;
+  const open = p.classList.toggle('show');
+  if (open) {
+    markNotifySeen();
+    render();
+  }
+};
+
+window.toggleNetChat = function (): void {
+  const el = document.getElementById('netChatPanel');
+  if (!el) return;
+  const collapsed = el.classList.toggle('collapsed');
+  const t = document.getElementById('netChatToggle');
+  if (t) t.textContent = collapsed ? '▸' : '▾';
+  if (!collapsed) {
+    markChatSeen();
+    render();
+  }
+};
+
+window.sendNetChat = function (): void {
+  const input = document.getElementById('netChatInput') as HTMLInputElement | null;
+  const text = input?.value ?? '';
+  if (!text.trim()) return;
+  const p = localPlayer();
+  pushChat(p?.seat ?? 0, p?.name ?? '本座', text);
+  if (input) input.value = '';
+  markChatSeen();
+  render();
 };
 window.openRules = openRules;
 window.closeRules = closeRules;
@@ -222,6 +260,7 @@ window.sendChat = function (): void {
   const p = localPlayer();
   pushChat(p?.seat ?? 0, p?.name ?? '本座', text);
   if (input) input.value = '';
+  markChatSeen();
   render();
 };
 

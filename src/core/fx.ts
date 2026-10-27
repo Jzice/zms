@@ -308,6 +308,28 @@ export function playCardFx(seat: number, card: Card, ownerName: string): void {
   }, 2200);
 }
 
+/** 出牌区内容提示（技能 / 符篆发动时浮现，自动淡出） */
+export function playHint(title: string, content: string, life = 2400): void {
+  const zone = document.getElementById('playZoneCards');
+  if (!zone || sim()) return;
+  zone.querySelector('.play-hint')?.remove();
+  const e = document.createElement('div');
+  e.className = 'play-hint';
+  e.innerHTML = `<span class="ph-title">${escapeHtml(title)}</span>${escapeHtml(content)}`;
+  zone.appendChild(e);
+  setTimeout(() => {
+    e.classList.add('fade-out');
+    setTimeout(() => e.remove(), 500);
+  }, life);
+}
+
+/** 清空出牌区（回合切换 / 离开对局） */
+export function clearPlayZone(): void {
+  const zone = document.getElementById('playZoneCards');
+  if (!zone) return;
+  zone.innerHTML = '<div class="play-zone-label">出 牌 区</div><span class="play-zone-empty">— 牌桌中央 —</span>';
+}
+
 /** 全屏闪光（雷劫 / 大招） */
 export function screenFlash(color = 'rgba(255,255,255,.35)'): void {
   const l = layer();

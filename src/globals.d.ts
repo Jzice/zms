@@ -42,6 +42,9 @@ declare global {
     againGame(): void;
     backToLobby(): void;
     sendChat(): void;
+    toggleNotifyPanel(): void;
+    toggleNetChat(): void;
+    sendNetChat(): void;
 
     /* 牌桌 */
     clickSeat(seat: number): void;

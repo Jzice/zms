@@ -12,6 +12,13 @@ export function pushChat(seat: number, name: string, text: string): void {
   if (G.chat.length > MAX_CHAT) G.chat.splice(0, G.chat.length - MAX_CHAT);
 }
 
+/** 系统播报（居中灰条） */
+export function pushSystem(text: string): void {
+  if (!text.trim()) return;
+  G.chat.push({ seat: -1, name: '系统', text: text.slice(0, 60), t: Date.now(), system: true });
+  if (G.chat.length > MAX_CHAT) G.chat.splice(0, G.chat.length - MAX_CHAT);
+}
+
 export function chatList(): ChatMsg[] {
   return G.chat;
 }

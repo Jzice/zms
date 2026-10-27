@@ -26,6 +26,7 @@ import {
   breakthroughPillar,
   judgeFlip,
   playCardFx,
+  playHint,
 } from '../core/fx';
 
 /** 符篆 / 阵法 / 秘术 → 音效 */
@@ -107,6 +108,7 @@ export function occupyLingdi(p: Player, card: Card): void {
 export function playTrick(p: Player, card: Card, targetSeat?: number): boolean {
   const target = targetSeat !== undefined ? G.players.find((x) => x.seat === targetSeat) : undefined;
   sfx(TRICK_SND[card.name] ?? 'trick');
+  playHint(card.name, card.desc ?? '符篆 / 阵法 / 秘术');
   switch (card.name) {
     case '储物袋':
       drawN(p, 2);

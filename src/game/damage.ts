@@ -24,7 +24,7 @@ export function dyingPhase(p: Player): void {
   if (p.daoxin >= 1) {
     p.daoxin -= 1;
     p.hp = 1;
-    addLog(`${p.name} 以道心稳住心神，寿元回复至 1`, 'system');
+    addLog(`${p.name} 以道心稳住心神，寿元回复至 1`, 'heal', p.seat);
     return;
   }
   // 灵丹自救
@@ -32,11 +32,11 @@ export function dyingPhase(p: Player): void {
   if (idx >= 0) {
     p.hand.splice(idx, 1);
     p.hp = 1;
-    addLog(`${p.name} 服下灵丹，寿元回复至 1`, 'system');
+    addLog(`${p.name} 服下灵丹，寿元回复至 1`, 'heal', p.seat);
     return;
   }
   p.alive = false;
-  addLog(`${p.name} 寿元耗尽，陨落。`, 'system');
+  addLog(`${p.name} 寿元耗尽，陨落。`, 'damage', p.seat);
   deathFx(p.seat, ROLE_MAP[p.role]?.name ?? p.role);
   sfx('death');
 }
@@ -72,12 +72,12 @@ export function applyDamage(
     dmg -= blocked;
     if (blocked > 0) {
       target.flags.daoxinGuardUsed = true;
-      addLog(`${target.name} 以道心抵挡 ${blocked} 点伤害`, 'system');
+      addLog(`${target.name} 以道心抵挡 ${blocked} 点伤害`, 'damage', target.seat);
     }
   }
 
   if (dmg <= 0) {
-    addLog(`${target.name} 以道心完全抵挡，未受实质损伤`, 'system');
+    addLog(`${target.name} 以道心完全抵挡，未受实质损伤`, 'damage', target.seat);
     return 0;
   }
 
@@ -93,7 +93,8 @@ export function applyDamage(
   const typeName = type === 'fire' ? '火系' : type === 'thunder' ? '雷系' : '';
   addLog(
     `${source ? source.name + ' 对 ' : ''}${target.name} 造成 ${dmg} 点${typeName}伤害，寿元剩 ${Math.max(0, target.hp)}`,
-    'system',
+    'damage',
+    target.seat,
   );
   sfx('hit');
 
@@ -116,7 +117,7 @@ export function heal(p: Player, n: number): number {
   p.hp = Math.min(p.maxHp, p.hp + n);
   const got = p.hp - before;
   if (got > 0) {
-    addLog(`${p.name} 回复 ${got} 点寿元`, 'system');
+    addLog(`${p.name} 回复 ${got} 点寿元`, 'heal', p.seat);
     sfx('heal');
     healGlow(p.seat);
   }

@@ -4,6 +4,7 @@
 import type { Player, Card } from '../core/types';
 import { G } from './state';
 import { addLog } from './log';
+import { pushSystem } from './chat';
 import { buildDeck } from '../data/cards';
 import { charOf, CHARACTERS, needsBeast } from '../data/characters';
 import { beastPoolFor, beastDef } from '../data/beasts';
@@ -176,6 +177,7 @@ export function startGame(cfg: GameConfig): void {
   for (const p of G.players) drawN(p, 4);
 
   addLog(`对局开始：${cfg.count} 人，身份已分派`, 'system');
+  pushSystem(`对局开始：${cfg.count} 人，身份已分派`);
   for (const p of G.players) {
     const c = charOf(p.charId);
     const power = POWER_MAP[p.power]?.name ?? p.power;

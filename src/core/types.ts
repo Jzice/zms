@@ -326,10 +326,25 @@ export interface Player {
   flags: PlayerFlags;
 }
 
+/** 战报类型（对齐 learn_kill：伤害/回复/技能/奖励/阵营/契约/系统） */
+export type LogKind =
+  | 'normal'
+  | 'system'
+  | 'damage'
+  | 'heal'
+  | 'skill'
+  | 'reward'
+  | 'faction'
+  | 'breakthrough'
+  | 'backlash'
+  | 'contract';
+
 export interface LogEntry {
   t: number;
   text: string;
-  kind?: 'normal' | 'breakthrough' | 'backlash' | 'contract' | 'system';
+  kind?: LogKind;
+  /** 关联座位（用于渲染头像；省略则不显示头像） */
+  seat?: number;
 }
 
 export interface ChatMsg {
@@ -337,6 +352,8 @@ export interface ChatMsg {
   name: string;
   text: string;
   t: number;
+  /** 系统播报（居中灰条，不带头像） */
+  system?: boolean;
 }
 
 /** 全局状态对象（顶层 render() 全量重绘的唯一数据源） */

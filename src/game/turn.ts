@@ -13,7 +13,7 @@ import { needDiscard, closeDoor } from './actions';
 import { expireContracts } from './contract';
 import { handLimit } from './rules';
 import { sleep } from '../core/dom';
-import { drawFly, discardFly } from '../core/fx';
+import { drawFly, discardFly, clearPlayZone } from '../core/fx';
 import { sfx } from '../core/sound';
 
 /** 回合初状态重置 */
@@ -35,7 +35,7 @@ export function judgePhase(p: Player): void {
 export function drawPhase(p: Player): void {
   G.phase = 'draw';
   drawN(p, 2);
-  addLog(`${p.name} 摸 2 张牌`, 'system');
+  addLog(`${p.name} 摸 2 张牌`, 'system', p.seat);
   sfx('draw');
   drawFly(p.seat, 2);
 }
@@ -72,11 +72,12 @@ export function tryCloseDoor(p: Player): boolean {
 
 /** 回合开始（供 loop 调用） */
 export async function beginTurn(p: Player): Promise<void> {
+  clearPlayZone();
   resetTurnState(p);
   applyTurnStart(p);
   recoverLingli(p);
   expireContracts(p);
-  addLog(`—— 第 ${G.turn} 回合：${p.name} ——`, 'system');
+  addLog(`—— 第 ${G.turn} 回合：${p.name} ——`, 'system', p.seat);
   sfx('turn');
   judgePhase(p);
   await sleep(150);

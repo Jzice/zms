@@ -84,8 +84,8 @@ function seatHtml(p: Player): string {
   // 牌桌坐标：座位沿椭圆环排布（0 号本座在正下方）
   const n = Math.max(1, G.players.length);
   const ang = Math.PI / 2 + (p.seat / n) * Math.PI * 2;
-  const sx = (50 + 40 * Math.cos(ang)).toFixed(2);
-  const sy = (50 + 37 * Math.sin(ang)).toFixed(2);
+  const sx = (50 + 34 * Math.cos(ang)).toFixed(2);
+  const sy = (50 + 32 * Math.sin(ang)).toFixed(2);
 
   // 寿元宝石：按真实血量上限离散显示（3–4 颗，三国杀内核）
   const total = Math.max(1, p.maxHp);
@@ -141,12 +141,9 @@ function seatHtml(p: Player): string {
       <div class="php-bar" title="寿元 ${p.hp}/${p.maxHp}">${gems}</div>
       <div class="pequip-slots">${slots}</div>
       <div class="pequip-names">${escapeHtml(eqNames)}</div>
-      <div class="pjudge-row">
-        <span class="judge-tag" title="灵力">灵 ${p.lingli}/${lmax}</span>
-        <span class="judge-tag" title="道心">道 ${p.daoxin}</span>
-      </div>
       <div class="pfooter">
         <span class="pf-realm" title="境界">${escapeHtml(prog.label)}</span>
+        <span class="pf-res" title="灵力 / 道心">灵${p.lingli}/${lmax}·道${p.daoxin}</span>
         <span class="hand-pile" title="手牌 ${p.hand.length} 张">
           <span class="mini-card"></span><span class="mini-card"></span><span class="mini-card"></span>
           <span class="hand-count">${p.hand.length}</span>

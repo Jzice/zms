@@ -146,6 +146,13 @@ check(uiBits.markBtns >= 5, `座位卡标记按钮已渲染（${uiBits.markBtns}
 check(uiBits.lbl === '掌门' && uiBits.marked, `身份标记生效并显示标签（${uiBits.lbl}）`);
 void uiBits.cardTag;
 
+const logUi = await page.evaluate(() => ({
+  av: document.querySelectorAll('.play-log-item .pl-av').length,
+  sys: document.querySelectorAll('.chat-msg.sys').length,
+}));
+check(logUi.av > 0, `战报头像已渲染（${logUi.av} 条带头像）`);
+check(logUi.sys > 0, `系统消息气泡已渲染（${logUi.sys} 条）`);
+
 console.log('\n=== 牌桌 / 列表模式 ===');
 const desk = await page.evaluate(() => {
   const s = document.querySelector('#seatRing .seat');
@@ -159,6 +166,18 @@ const desk = await page.evaluate(() => {
 check(desk.pos === 'absolute', `大屏为牌桌模式（座位绝对定位，实际 ${desk.pos}）`);
 check(desk.hasInlineXY, '座位携带牌桌坐标 left/top');
 check(desk.ringPos === 'absolute', `座位环为绝对容器（实际 ${desk.ringPos}）`);
+
+// 座位卡不因悬停而位移；当前行动者以 .p-card.turn 金光标识
+const seatBox1 = await (await page.$('#seatRing .seat')).boundingBox();
+await page.hover('#seatRing .seat');
+await page.waitForTimeout(220);
+const seatBox2 = await (await page.$('#seatRing .seat')).boundingBox();
+check(
+  Math.abs((seatBox2?.y ?? 0) - (seatBox1?.y ?? 0)) < 1 && Math.abs((seatBox2?.x ?? 0) - (seatBox1?.x ?? 0)) < 1,
+  '座位卡无悬停跳动（仅手牌保留悬停抬升）',
+);
+const turnGlow = await page.evaluate(() => !!document.querySelector('.p-card.turn'));
+check(turnGlow, '当前行动者以金光高亮标识');
 
 await page.setViewportSize({ width: 390, height: 800 });
 await page.waitForTimeout(300);

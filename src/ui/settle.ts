@@ -11,6 +11,7 @@ import { campName } from '../data/camps';
 import { ROLE_MAP } from '../data/roles';
 import { victoryFx } from '../core/fx';
 import { sfx } from '../core/sound';
+import { pushSystem } from '../game/chat';
 
 /** 结算特效只播一次（render 会多次调用 renderSettle） */
 let fxSettle: unknown = null;
@@ -111,6 +112,7 @@ export function renderSettle(): void {
 
   if (fxSettle !== s) {
     fxSettle = s;
+    pushSystem(`本局结束：${s.title}`);
     sfx(win ? 'win' : 'lose');
     victoryFx(camp, 'settleHero');
   }
