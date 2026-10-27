@@ -38,7 +38,7 @@ export function dyingPhase(p: Player): void {
   p.alive = false;
   addLog(`${p.name} 寿元耗尽，陨落。`, 'system');
   deathFx(p.seat, ROLE_MAP[p.role]?.name ?? p.role);
-  sfx('lose');
+  sfx('death');
 }
 
 /**
@@ -117,6 +117,7 @@ export function heal(p: Player, n: number): number {
   const got = p.hp - before;
   if (got > 0) {
     addLog(`${p.name} 回复 ${got} 点寿元`, 'system');
+    sfx('heal');
     healGlow(p.seat);
   }
   return got;

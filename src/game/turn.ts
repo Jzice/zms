@@ -14,6 +14,7 @@ import { expireContracts } from './contract';
 import { handLimit } from './rules';
 import { sleep } from '../core/dom';
 import { drawFly, discardFly } from '../core/fx';
+import { sfx } from '../core/sound';
 
 /** 回合初状态重置 */
 export function resetTurnState(p: Player): void {
@@ -35,6 +36,7 @@ export function drawPhase(p: Player): void {
   G.phase = 'draw';
   drawN(p, 2);
   addLog(`${p.name} 摸 2 张牌`, 'system');
+  sfx('draw');
   drawFly(p.seat, 2);
 }
 
@@ -54,7 +56,10 @@ export async function discardPhase(p: Player): Promise<void> {
       dropped++;
     }
   }
-  if (dropped > 0) discardFly(p.seat);
+  if (dropped > 0) {
+    sfx('discard');
+    discardFly(p.seat);
+  }
 }
 
 /** 回合末「闭关」（可选：弃全部手牌换修为） */
@@ -72,6 +77,7 @@ export async function beginTurn(p: Player): Promise<void> {
   recoverLingli(p);
   expireContracts(p);
   addLog(`—— 第 ${G.turn} 回合：${p.name} ——`, 'system');
+  sfx('turn');
   judgePhase(p);
   await sleep(150);
   drawPhase(p);

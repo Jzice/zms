@@ -20,6 +20,7 @@ declare global {
     closeVerse(): void;
     closeContractModal(): void;
     closeMarkMenu(): void;
+    openMarkMenu(seat: number): void;
     closeSettle(): void;
     switchRulesTab(tab: string): void;
     setRoleMarkUI(seat: number, roleId: string): void;

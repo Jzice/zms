@@ -10,7 +10,7 @@
  *   - 术语用修真语汇：剑气 / 护体灵光 / 灵石 / 符箓 / 道心澄明 / 心魔滋生 / 破境 / 陨落。
  */
 import type { Card } from '../core/types';
-import { isSim } from './dom';
+import { isSim, escapeHtml } from './dom';
 
 type Point = { x: number; y: number };
 
@@ -278,6 +278,36 @@ export function equipFx(seat: number, name: string): void {
   push('fx-equip', seatAnchor(seat), 900, name);
 }
 
+/** 出牌区：把刚打出的牌浮现在牌桌中央（最多 4 张，2.2s 后淡出） */
+export function playCardFx(seat: number, card: Card, ownerName: string): void {
+  const zone = document.getElementById('playZoneCards');
+  if (!zone || sim()) return;
+  zone.querySelector('.play-zone-empty')?.remove();
+  const isRed = card.suit === '♥' || card.suit === '♦';
+  const tag = card.type === 'fu' ? 'trick' : card.type === 'faqi' ? 'equip' : isRed ? 'red' : '';
+  const at = seatAnchor(seat);
+  const e = document.createElement('div');
+  e.className = `play-card ${tag}`;
+  const faction = at.el?.style.getPropertyValue('--faction-color') ?? '';
+  if (faction) e.style.borderColor = faction;
+  e.innerHTML =
+    `<span class="pcsuit">${card.suit}</span>` +
+    `<span class="pcnum">${card.num}</span>` +
+    `<span class="pcname">${escapeHtml(card.name)}</span>` +
+    `<span class="pcowner">${escapeHtml(ownerName)}</span>`;
+  while (zone.querySelectorAll('.play-card').length >= 4) zone.querySelector('.play-card')?.remove();
+  zone.appendChild(e);
+  setTimeout(() => {
+    e.classList.add('fade-out');
+    setTimeout(() => {
+      e.remove();
+      if (!zone.querySelectorAll('.play-card').length) {
+        zone.innerHTML = '<div class="play-zone-label">出 牌 区</div><span class="play-zone-empty">— 牌桌中央 —</span>';
+      }
+    }, 420);
+  }, 2200);
+}
+
 /** 全屏闪光（雷劫 / 大招） */
 export function screenFlash(color = 'rgba(255,255,255,.35)'): void {
   const l = layer();
@@ -301,8 +331,8 @@ export function resultBanner(text: string, win: boolean): void {
 }
 
 /** 胜利个性动画：正道金光 / 外道血焰 / 隐匿紫雾 / 败北灰碎片 */
-export function victoryFx(kind: 'zhengdao' | 'waidao' | 'yinni' | 'lose'): void {
-  const l = layer();
+export function victoryFx(kind: 'zhengdao' | 'waidao' | 'yinni' | 'lose', mountId = 'fxLayer'): void {
+  const l = document.getElementById(mountId) ?? layer();
   if (!l || sim()) return;
   const wrap = document.createElement('div');
   wrap.className = `fx-vic fx-vic-${kind}`;

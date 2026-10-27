@@ -10,6 +10,25 @@ import { renderHand, renderActionBtns, renderActionHint } from './hand';
 import { renderSettle } from './settle';
 import { pendingChoice } from '../game/choice';
 import { escapeHtml } from '../core/dom';
+import { charOf } from '../data/characters';
+
+/** 战报条目类型 → 颜色类（对齐 learn_kill 的 play-log-item） */
+const LOG_CLS: Record<string, string> = {
+  system: 'sys',
+  backlash: 'dmg',
+  contract: 'hl',
+  breakthrough: 'reward',
+};
+
+function hhmm(t: number): string {
+  const d = new Date(t);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+function avatarOf(seat: number): string {
+  const p = G.players.find((x) => x.seat === seat);
+  return p ? (charOf(p.charId)?.avatar ?? '🧙') : '🧙';
+}
 
 let screen: 'lobby' | 'setup' | 'game' = 'lobby';
 
@@ -68,10 +87,10 @@ function renderLogs(): void {
   if (!el) return;
   const items = logsDesc().slice(0, 60);
   el.innerHTML = items
-    .map(
-      (l) =>
-        `<div class="log-line log-${l.kind ?? 'normal'}">${escapeHtml(l.text)}</div>`,
-    )
+    .map((l) => {
+      const cls = LOG_CLS[l.kind ?? 'normal'] ?? '';
+      return `<div class="play-log-item ${cls}"><span class="pl-time">${hhmm(l.t)}</span>${escapeHtml(l.text)}</div>`;
+    })
     .join('');
   if (badge) badge.textContent = String(G.logs.length);
 }
@@ -79,10 +98,21 @@ function renderLogs(): void {
 function renderChat(): void {
   const el = document.getElementById('chatList');
   if (!el) return;
+  const meSeat = G.players.find((p) => !p.ai)?.seat;
   el.innerHTML = chatList()
     .slice(-40)
-    .map((c) => `<div class="chat-line"><b>${escapeHtml(c.name)}</b>：${escapeHtml(c.text)}</div>`)
+    .map((c) => {
+      const self = meSeat !== undefined && c.seat === meSeat;
+      return `<div class="chat-msg${self ? ' self' : ''}">
+        <div class="cm-who">
+          <span class="cm-avatar">${avatarOf(c.seat)}</span>
+          <span class="cm-meta"><span class="cm-name">${escapeHtml(c.name)}</span></span>
+        </div>
+        <div class="cm-bubble">${escapeHtml(c.text)}</div>
+      </div>`;
+    })
     .join('');
+  el.scrollTop = el.scrollHeight;
 }
 
 /** 待处理选择（护身 / 灵丹 / 目标选择等） */

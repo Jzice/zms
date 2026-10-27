@@ -60,8 +60,11 @@ function cardHtml(p: Player, c: Card, atkCapped = false): string {
   const sel = selectedCard === c.id;
   const isRed = c.suit === '♥' || c.suit === '♦';
   const tone = isRed ? 'red' : 'black';
+  const tag = c.type === 'fu' ? 'trick-tag' : c.type === 'faqi' ? 'equip-tag' : '';
+  const myTurn = G.current === p.seat && G.phase === 'play' && !G.over;
+  const playable = myTurn && !disabled;
   return `
-  <div class="card ${tone} ${sel ? 'card-sel' : ''} ${disabled ? 'card-disabled' : ''}"
+  <div class="card ${tone} ${tag} ${playable ? 'clickable' : ''} ${sel ? 'card-sel' : ''} ${disabled ? 'card-disabled' : ''}"
        style="--c:${subColor(c.sub)}" title="${escapeHtml(tip)}"
        onclick="selectCard(${c.id})">
     <span class="suit">${c.suit}</span>
@@ -112,6 +115,7 @@ export function renderActionHint(): void {
   if (needDiscard(p) > 0) msgs.push(`需弃 ${needDiscard(p)} 张（手牌上限 ${p.hp}）`);
   const chk = canBreakthrough(p);
   msgs.push(chk.ok ? '✦ 可境界突破' : `突破：${breakthroughHint(p)}`);
+  el.className = `action-hint${selectedCard ? ' hint-target' : ''}`;
   el.innerHTML = msgs.map((m) => `<span class="hint-item">${escapeHtml(m)}</span>`).join('');
 }
 

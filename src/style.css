@@ -1254,7 +1254,7 @@ body[data-theme="green"]  { --gold: #5fd07a; --gold-dim: #2e8a4a; --accent-stron
 .fx-flash {
   position: fixed; pointer-events: none; z-index: 1000;
 }
-#fxLayer .fx-vic { position: absolute; inset: 0; pointer-events: none; z-index: 1002; }
+.fx-vic { position: absolute; inset: 0; pointer-events: none; z-index: 1002; }
 
 /* 剑意突进 / 受击震颤 */
 .p-card.fx-lunge { animation: fxLunge .45s cubic-bezier(.3, 1.4, .5, 1); }
@@ -1595,6 +1595,177 @@ body[data-theme="green"]  { --gold: #5fd07a; --gold-dim: #2e8a4a; --accent-stron
 .fx-vic-lose .fv-shard.s2 { left: 52%; width: 7px; height: 12px; }
 .fx-vic-lose .fv-shard.s3 { left: 74%; width: 11px; height: 6px; }
 @keyframes fvShard { 0% { transform: translateY(0) rotate(0); opacity: 0; } 15% { opacity: .9; } 100% { transform: translateY(180px) rotate(320deg); opacity: 0; } }
+
+/* ============================================================
+   卡牌交互态 / 出牌区 / 身份标记 / 提示态（learn_kill 同款）
+   ============================================================ */
+
+/* 可出的手牌：金色呼吸脉冲（learn_kill cardPulse） */
+.card.clickable { cursor: pointer; animation: cardPulse 1.6s ease-in-out infinite; }
+.card.clickable:hover { animation: none; }
+@keyframes cardPulse {
+  0%, 100% { box-shadow: 0 0 6px rgba(245, 197, 66, .35); }
+  50% { box-shadow: 0 0 16px rgba(245, 197, 66, .75); }
+}
+.card.card-disabled { pointer-events: none; }
+
+/* 符篆 / 法宝 牌面配色 */
+.card.trick-tag { background: linear-gradient(160deg, #2b1c3a, #150d20); border-color: #b57fff; }
+.card.trick-tag .cname { color: #d9b6ff; }
+.card.equip-tag { background: linear-gradient(160deg, #1c2b3a, #0d1520); border-color: #5ec8ff; }
+.card.equip-tag .cname { color: #a8dcff; }
+
+/* 出牌区浮现的牌 */
+.play-card { animation: playCardIn .4s cubic-bezier(.3, 1.4, .5, 1); }
+.play-card .pcsuit, .play-card .pcnum { position: absolute; top: 1px; font-size: 7px; }
+.play-card .pcsuit { left: 2px; }
+.play-card .pcnum { right: 2px; color: #7a6a50; }
+.play-card .pcowner {
+  position: absolute; bottom: 0; left: 0; right: 0; text-align: center; font-size: 5.5px;
+  color: #7a6a50; background: rgba(255, 255, 255, .35); border-radius: 0 0 2px 2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.play-card.red .pcsuit { color: #c0392b; }
+.play-card.trick { border-color: #b57fff; }
+.play-card.equip { border-color: #5ec8ff; }
+.play-card.fade-out { animation: playCardOut .42s ease-in forwards; }
+@keyframes playCardIn {
+  from { opacity: 0; transform: translateY(30px) scale(.4) rotate(-20deg); }
+  60% { opacity: 1; transform: translateY(-3px) scale(1.08); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes playCardOut { to { opacity: 0; transform: translateY(-20px) scale(.5) rotate(10deg); } }
+
+/* 座位卡身份标记 */
+.p-card .p-mark-btn {
+  position: absolute; top: -10px; right: -8px; width: 22px; height: 22px; padding: 0;
+  background: rgba(0, 0, 0, .75); border: 1.5px solid var(--gold-dim); color: var(--gold);
+  border-radius: 50%; cursor: pointer; font-size: 11px; line-height: 1;
+  display: flex; align-items: center; justify-content: center; z-index: 7; font-family: inherit;
+}
+.p-card .p-mark-btn:hover { background: #1a0a08; border-color: var(--gold); box-shadow: 0 0 8px rgba(245, 197, 66, .6); }
+.p-card .p-mark-label {
+  position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+  font-size: 9px; font-weight: 700; padding: 2px 8px; border-radius: 10px; white-space: nowrap;
+  background: #0a0402; border: 1.5px solid currentColor; box-shadow: 0 2px 8px rgba(0, 0, 0, .7);
+  pointer-events: none; z-index: 8;
+}
+.p-card .p-mark-label::after {
+  content: ''; position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%);
+  width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent;
+  border-top: 5px solid currentColor;
+}
+.p-card.role-marked { box-shadow: 0 0 0 2px rgba(255, 255, 255, .14), inset 0 0 16px rgba(0, 0, 0, .45); }
+
+/* 操作提示态 */
+.action-hint.hint-play { color: var(--gold); font-weight: 600; }
+.action-hint.hint-target { color: #e74c3c; font-weight: 600; }
+.action-hint.hint-urgent { color: #ff9a5a; font-weight: 600; animation: hintPulse 1s infinite; }
+@keyframes hintPulse { 0%, 100% { opacity: 1; } 50% { opacity: .65; } }
+
+/* ============================================================
+   结算页（对齐 learn_kill：胜利演出 + 名片 + 统计 + 战绩表）
+   ============================================================ */
+.settle-hero {
+  position: relative; height: 160px; border-radius: 10px; overflow: hidden; margin-bottom: 10px;
+  display: flex; align-items: flex-start; justify-content: center; padding-top: 18px;
+  background: radial-gradient(ellipse at center, rgba(245, 197, 66, .16), transparent 70%);
+}
+/* 胜利演出图标下沉到标题下方，避免与「胜利 / 败北」大字重叠 */
+#settleHero .fv-icon { top: 70%; font-size: 38px; }
+#settleHero .fv-word { display: none; }
+.settle-hero.lose { background: radial-gradient(ellipse at center, rgba(120, 120, 140, .18), transparent 70%); }
+.settle-hero.waidao { background: radial-gradient(ellipse at center, rgba(231, 76, 60, .22), transparent 70%); }
+.settle-hero.yinni { background: radial-gradient(ellipse at center, rgba(155, 89, 182, .22), transparent 70%); }
+.sh-text { text-align: center; z-index: 3; position: relative; }
+.sh-title {
+  font-size: 30px; font-weight: 800; letter-spacing: 4px; color: var(--gold);
+  text-shadow: 0 2px 18px rgba(245, 197, 66, .6); animation: shPop .6s cubic-bezier(.2, 1.6, .4, 1);
+  font-family: "STKaiti", "KaiTi", serif;
+}
+.settle-hero.lose .sh-title { color: #b0b0c0; text-shadow: 0 2px 14px rgba(0, 0, 0, .6); }
+@keyframes shPop {
+  0% { transform: scale(.4); opacity: 0; }
+  70% { transform: scale(1.15); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.sh-sub { font-size: 12px; color: var(--text); margin-top: 6px; letter-spacing: 1px; text-shadow: 0 1px 4px #000; }
+
+.settle-idcard {
+  display: flex; align-items: center; gap: 10px; padding: 8px 10px; margin-bottom: 8px;
+  background: rgba(0, 0, 0, .28); border: 1px solid var(--border); border-radius: 8px;
+}
+.si-av { font-size: 26px; }
+.si-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.si-name { font-size: 14px; color: var(--gold); font-weight: 700; }
+.si-role { font-size: 10.5px; color: var(--muted); margin-top: 2px; }
+.si-result { font-size: 11px; padding: 2px 8px; border-radius: 10px; white-space: nowrap; }
+.si-result.win { background: rgba(95, 224, 138, .16); color: #5fe08a; }
+.si-result.lose { background: rgba(231, 76, 60, .16); color: #e88b7f; }
+
+.settle-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 8px; }
+.ss-cell { background: rgba(0, 0, 0, .24); border: 1px solid var(--border); border-radius: 7px; padding: 7px 4px; text-align: center; }
+.ss-cell b { display: block; font-size: 14px; color: var(--gold); }
+.ss-cell span { font-size: 9.5px; color: var(--muted); }
+.settle-score { text-align: center; font-size: 12px; color: #8fd0ff; margin-bottom: 8px; }
+.settle-ach { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.sd-ach {
+  font-size: 11px; padding: 3px 9px; border-radius: 12px; color: var(--gold);
+  background: rgba(245, 197, 66, .16); border: 1px solid var(--gold-dim);
+}
+.settle-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.settle-table th {
+  color: var(--gold-dim); font-weight: 600; font-size: 10px; text-align: left;
+  padding: 3px 5px; border-bottom: 1px solid var(--border); white-space: nowrap;
+}
+.settle-table td { padding: 4px 5px; border-bottom: 1px solid rgba(255, 255, 255, .05); white-space: nowrap; }
+.settle-table tr.me { background: rgba(245, 197, 66, .1); }
+.sd-me { font-size: 9px; padding: 0 5px; border-radius: 8px; background: var(--gold); color: #2a1a06; }
+
+/* ============================================================
+   聊天气泡（微信式：他人左、自己右）
+   ============================================================ */
+.chat-msg {
+  display: flex; align-items: flex-start; gap: 6px; margin-bottom: 6px;
+  width: fit-content; max-width: 100%; animation: chatIn .3s ease-out;
+}
+@keyframes chatIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.chat-msg .cm-who { display: flex; flex-direction: column; align-items: center; width: 34px; flex-shrink: 0; }
+.chat-msg .cm-avatar { font-size: 19px; line-height: 1.1; }
+.chat-msg .cm-meta { display: flex; flex-direction: column; align-items: center; margin-top: 1px; }
+.chat-msg .cm-name {
+  font-size: 8.5px; font-weight: 600; color: var(--gold); line-height: 1.15;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 52px;
+}
+.chat-msg.self .cm-name { color: #6cf; }
+.chat-msg .cm-bubble {
+  font-size: 10.5px; line-height: 1.5; padding: 5px 9px; border-radius: 10px;
+  max-width: min(64vw, 240px); word-break: break-word;
+  background: rgba(0, 0, 0, .32); border: 1px solid rgba(138, 109, 59, .35); color: #e6d8bc;
+}
+.chat-msg.self { margin-left: auto; flex-direction: row-reverse; }
+.chat-msg.self .cm-bubble {
+  background: linear-gradient(160deg, rgba(41, 128, 185, .4), rgba(41, 128, 185, .18));
+  border-color: rgba(41, 128, 185, .45); color: #dcefff;
+}
+
+/* ============================================================
+   战报条目（时间 + 类型左侧色条）
+   ============================================================ */
+.play-log-item {
+  margin-bottom: 3px; padding: 2px 5px; background: rgba(0, 0, 0, .3);
+  border-left: 2px solid var(--gold-dim); border-radius: 0 4px 4px 0;
+  animation: logIn .35s ease-out; color: #c8b8a0;
+}
+@keyframes logIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: none; } }
+.play-log-item .pl-time { color: #7a6a50; font-size: 8.5px; margin-right: 5px; font-variant-numeric: tabular-nums; }
+.play-log-item.dmg { border-left-color: #e74c3c; }
+.play-log-item.heal { border-left-color: #27ae60; }
+.play-log-item.skill { border-left-color: #9b59b6; }
+.play-log-item.reward { border-left-color: var(--gold); background: rgba(245, 197, 66, .12); }
+.play-log-item.hl { border-left-color: var(--gold); color: var(--gold); font-weight: 600; }
+.play-log-item.sys { border-left-color: var(--gold); background: rgba(245, 197, 66, .08); color: var(--gold); font-size: 9.5px; }
+
 
 
 

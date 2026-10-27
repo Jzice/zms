@@ -133,6 +133,19 @@ check(game.hand > 0, `手牌区已渲染（${game.hand} 张）`);
 check(game.logs > 0, `战报已渲染（${game.logs} 条）`);
 check(!!game.snapshot, '调试快照可用');
 
+console.log('\n=== 标记 / 卡牌态 ===');
+const uiBits = await page.evaluate(() => {
+  const markBtns = document.querySelectorAll('.p-mark-btn').length;
+  window.setRoleMarkUI(1, 'master');
+  const lbl = document.querySelector('#seat-1 .p-mark-label');
+  const marked = document.querySelector('#seat-1 .p-card')?.classList.contains('role-marked') ?? false;
+  const cardTag = document.querySelector('.card.trick-tag, .card.equip-tag') ? true : false;
+  return { markBtns, lbl: lbl?.textContent ?? '', marked, cardTag };
+});
+check(uiBits.markBtns >= 5, `座位卡标记按钮已渲染（${uiBits.markBtns} 个，自身除外）`);
+check(uiBits.lbl === '掌门' && uiBits.marked, `身份标记生效并显示标签（${uiBits.lbl}）`);
+void uiBits.cardTag;
+
 console.log('\n=== 牌桌 / 列表模式 ===');
 const desk = await page.evaluate(() => {
   const s = document.querySelector('#seatRing .seat');

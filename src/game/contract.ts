@@ -13,6 +13,7 @@ import { G } from './state';
 import { addLog } from './log';
 import { CONTRACT_MAP, SOUL_BACKLASH_LETHAL } from '../data/contracts';
 import { coolBreeze, heartLock, ghostShadow } from '../core/fx';
+import { sfx } from '../core/sound';
 import { roleDef } from '../data/roles';
 
 let CID = 1;
@@ -84,6 +85,7 @@ export function signContract(a: Player, b: Player, defId: string): ContractState
     'contract',
   );
   // 视觉：凉风扫过（青白流光横贯双方）+ 心头锁落下
+  sfx('contract');
   coolBreeze(document.getElementById(`seat-${a.seat}`), document.getElementById(`seat-${b.seat}`));
   heartLock(a.seat);
   heartLock(b.seat);
@@ -115,6 +117,7 @@ export function breakContract(contractId: string, breaker: Player): void {
   }
 
   // 视觉：契约鬼以尖头鬼影现于违约者印堂之上
+  sfx('backlash');
   ghostShadow(document.getElementById(`seat-${breaker.seat}`));
 
   const oversees = gongzhengguiOversees();

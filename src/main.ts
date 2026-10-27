@@ -28,6 +28,7 @@ import {
   closeVerse,
   closeContractModal,
   closeMarkMenu,
+  openMarkMenu,
   switchRulesTab,
 } from './ui/modals';
 import { closeSettle } from './ui/settle';
@@ -83,6 +84,7 @@ window.closeProfile = closeProfile;
 window.closeVerse = closeVerse;
 window.closeContractModal = closeContractModal;
 window.closeMarkMenu = closeMarkMenu;
+window.openMarkMenu = openMarkMenu;
 window.closeSettle = closeSettle;
 window.switchRulesTab = switchRulesTab;
 window.togglePanel = togglePanel;

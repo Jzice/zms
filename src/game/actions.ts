@@ -25,11 +25,25 @@ import {
   wudaoGlow,
   breakthroughPillar,
   judgeFlip,
+  playCardFx,
 } from '../core/fx';
+
+/** 符篆 / 阵法 / 秘术 → 音效 */
+const TRICK_SND: Record<string, Parameters<typeof sfx>[0]> = {
+  十方风火归元大阵: 'trick_aoe',
+  万剑钻心: 'trick_aoe',
+  三木回心阵: 'trick_heal',
+  七星定身阵: 'trick_delay',
+  天劫: 'trick_delay',
+  破阵符: 'trick_steal',
+  心生蜂云剑: 'trick_steal',
+  幻影夺心刺: 'duel',
+};
 
 /** 灵药：本回合神通伤害 +1（简化：直接额外回复 1 灵力并记录） */
 export function playLingyao(p: Player): void {
   p.lingli += 1;
+  sfx('lingyao');
   addLog(`${p.name} 服用灵药，灵力 +1`, 'system');
 }
 
@@ -39,13 +53,14 @@ export function playShengtong(p: Player, card: Card, targetSeat: number): boolea
   const target = G.players.find((x) => x.seat === targetSeat);
   if (!target || !canTargetShengtong(p, target)) return false;
   G.shengtongUsed += 1;
-  sfx('play');
+  sfx('shengtong');
   attackLunge(p.seat);
   const shieldIdx = target.hand.findIndex((c) => c.sub === 'hushen');
   if (shieldIdx >= 0) {
     const shield = target.hand.splice(shieldIdx, 1)[0];
     G.discard.push(shield);
     addLog(`${target.name} 打出【护身】，挡下 ${p.name} 的神通`, 'system');
+    sfx('hushen');
     shieldRing(target.seat);
     return true;
   }
@@ -61,6 +76,7 @@ export function playLingdan(p: Player, targetSeat?: number): void {
   if (!t) return;
   heal(t, 1);
   p.xiuwei += 1; // 感悟：服用灵丹
+  sfx('lingdan');
   addLog(`${p.name} 以灵丹为 ${t.name} 回复寿元（感悟 +1）`, 'system');
 }
 
@@ -75,6 +91,7 @@ export function equipFaqi(p: Player, card: Card): void {
   }
   p.equips[slot] = card;
   addLog(`${p.name} 装备【${card.name}】`, 'system');
+  sfx('equip');
   equipFx(p.seat, card.name);
 }
 
@@ -89,6 +106,7 @@ export function occupyLingdi(p: Player, card: Card): void {
 /** 符篆 / 阵法 / 秘术 效果 */
 export function playTrick(p: Player, card: Card, targetSeat?: number): boolean {
   const target = targetSeat !== undefined ? G.players.find((x) => x.seat === targetSeat) : undefined;
+  sfx(TRICK_SND[card.name] ?? 'trick');
   switch (card.name) {
     case '储物袋':
       drawN(p, 2);
@@ -193,6 +211,7 @@ export function playContract(p: Player, card: Card, targetSeat: number, defId: s
   const chk = canSign(p, target);
   if (!chk.ok) return false;
   const c = signContract(p, target, defId);
+  if (c) sfx('contract');
   return !!c;
 }
 
@@ -213,13 +232,14 @@ export function playWudao(p: Player): boolean {
       sfx('breakthrough');
     }
   } else {
+    sfx('skill_fail');
     floatText(document.getElementById(`seat-${p.seat}`), `修为 +${r.xiuweiGain}`, '#B8B0A0');
   }
   return true;
 }
 
-/** 出牌总入口 */
-export function playCard(p: Player, cardId: number, targetSeat?: number, extra?: string): boolean {
+/** 出牌结算（内部） */
+function playCardInner(p: Player, cardId: number, targetSeat?: number, extra?: string): boolean {
   const idx = p.hand.findIndex((c) => c.id === cardId);
   if (idx < 0) return false;
   const card = p.hand[idx];
@@ -260,6 +280,14 @@ export function playCard(p: Player, cardId: number, targetSeat?: number, extra?:
   p.hand.splice(idx, 1);
   G.discard.push(card);
   return true;
+}
+
+/** 出牌总入口：结算成功后，将打出之牌浮现于牌桌中央（出牌区） */
+export function playCard(p: Player, cardId: number, targetSeat?: number, extra?: string): boolean {
+  const card = p.hand.find((c) => c.id === cardId);
+  const ok = playCardInner(p, cardId, targetSeat, extra);
+  if (ok && card) playCardFx(p.seat, card, p.name);
+  return ok;
 }
 
 /** 弃牌阶段：超出手牌上限需弃 */

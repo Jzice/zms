@@ -14,6 +14,7 @@ import { realmProgress, lingliMax } from '../game/realm';
 import { highestLingdiTier } from '../data/lingdi';
 import { BEAST_MAP } from '../data/beasts';
 import { isPublicRole } from '../game/roles';
+import { ROLE_MARKS } from '../game/marks';
 import { render } from './render';
 
 const PHASE_NAME: Record<string, string> = {
@@ -116,12 +117,19 @@ function seatHtml(p: Player): string {
   const roleText = showRole ? (role?.name ?? p.role) : '？？';
   const roleColor = showRole ? (SIDE_COLOR[side] ?? 'var(--muted)') : 'var(--muted)';
 
+  // 身份标记（玩家手动标注的身份猜测）
+  const markId = ROLE_MARKS[p.seat];
+  const markDef = markId ? ROLE_MAP[markId] : undefined;
+  const markColor = markDef ? (SIDE_COLOR[markDef.side] ?? 'var(--gold)') : 'var(--gold)';
+
   return `
   <div class="seat${isCur ? ' seat-cur' : ''}" id="seat-${p.seat}"
        style="--faction-color:${campColor(p.camp)};--side:${SIDE_COLOR[side]};left:${sx}%;top:${sy}%"
        onclick="clickSeat(${p.seat})">
-    <div class="p-card${isCur ? ' turn' : ''}${p.alive ? '' : ' dead'}${isSelf ? ' is-self' : ''}${G.thinkingSeat === p.seat ? ' thinking' : ''}">
+    <div class="p-card${isCur ? ' turn' : ''}${p.alive ? '' : ' dead'}${isSelf ? ' is-self' : ''}${markDef ? ' role-marked' : ''}${G.thinkingSeat === p.seat ? ' thinking' : ''}">
       <span class="faction-icon" title="${escapeHtml(campName(p.camp))}">${CAMP_EMOJI[p.camp] ?? '🧑'}</span>
+      ${isSelf ? '' : `<button class="p-mark-btn" title="标记身份" onclick="event.stopPropagation();openMarkMenu(${p.seat})">🏷</button>`}
+      ${markDef ? `<span class="p-mark-label" style="color:${markColor}">${escapeHtml(markDef.name)}</span>` : ''}
       <div class="pheader">
         <div class="pavatar">${c?.avatar ?? '🧙'}</div>
         <div class="pname-block">
