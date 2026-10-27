@@ -1,0 +1,78 @@
+# 持续集成：类型检查 → 构建双模式产物 → 校验单文件完整性 → 全链路冒烟
+# 纯 Node 步骤 + 可选无头浏览器 UI 冒烟，可在每次 push / PR 秒级反馈
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# 同一分支的新提交取消仍在运行的旧任务
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: 类型检查 / 构建 / 校验
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: TypeScript 严格模式检查
+        run: npm run typecheck
+
+      - name: 构建 CDN 与 bundled 双模式产物
+        run: npm run build
+
+      - name: 校验产物为自包含单文件
+        run: npm run verify:dist
+
+      - name: 单机对局闭环冒烟
+        run: npm run smoke
+
+      - name: 牌堆构成与术语合规
+        run: npm run smoke:cards
+
+      - name: 角色名册完整性与术语合规
+        run: npm run smoke:roster
+
+      - name: 身份池与人数配比
+        run: npm run smoke:roles
+
+      - name: 灵魂契约机制
+        run: npm run smoke:contract
+
+      - name: 境界成长与悟道判定
+        run: npm run smoke:wudao
+
+      - name: 联机协议
+        run: npm run smoke:net
+
+      - name: 安装无头 Chromium（UI 冒烟，非阻断）
+        run: npx playwright install chromium
+
+      - name: 浏览器 UI 冒烟（非阻断）
+        continue-on-error: true
+        run: npm run smoke:ui
+
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/*.html
+          retention-days: 7
+          if-no-files-found: error

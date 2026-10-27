@@ -1,0 +1,251 @@
+/* ==================== 卡牌结算 ====================
+ * 基本牌：神通（火/雷系）、护身、灵丹、灵药、悟道
+ * 符篆类：符篆 / 阵法 / 秘术 / 灵魂契约
+ * 法宝四槽：本命法宝·法器 / 护身 / 飞梭·灵舟 / 秘宝·重宝
+ * 灵地：占据后提供灵地阶位
+ */
+import type { Player, Card, CardSub } from '../core/types';
+import { G, drawN } from './state';
+import { addLog } from './log';
+import { applyDamage, heal } from './damage';
+import { canTargetShengtong, handLimit } from './rules';
+import { judgeWudao, canUseWudao } from './wudao';
+import { signContract, canSign } from './contract';
+import { breakthroughRealm, canBreakthrough, requiredLingdiTier } from './realm';
+import { lingdiTierOf } from '../data/cards';
+import { sfx } from '../core/sound';
+import { floatText, inkBurst, goldGuard } from '../core/fx';
+
+/** 灵药：本回合神通伤害 +1（简化：直接额外回复 1 灵力并记录） */
+export function playLingyao(p: Player): void {
+  p.lingli += 1;
+  addLog(`${p.name} 服用灵药，灵力 +1`, 'system');
+}
+
+/** 神通：指定目标，对方须打出护身 */
+export function playShengtong(p: Player, card: Card, targetSeat: number): boolean {
+  const target = G.players.find((x) => x.seat === targetSeat);
+  if (!target || !canTargetShengtong(p, target)) return false;
+  G.shengtongUsed += 1;
+  sfx('play');
+  const shieldIdx = target.hand.findIndex((c) => c.sub === 'hushen');
+  if (shieldIdx >= 0) {
+    const shield = target.hand.splice(shieldIdx, 1)[0];
+    G.discard.push(shield);
+    addLog(`${target.name} 打出【护身】，挡下 ${p.name} 的神通`, 'system');
+    goldGuard(document.getElementById(`seat-${target.seat}`));
+    return true;
+  }
+  const dmg = 1 + (card.sub === 'huo' || card.sub === 'lei' ? 1 : 0);
+  inkBurst(document.getElementById(`seat-${target.seat}`));
+  applyDamage(target, dmg, card.damageType ?? 'normal', p);
+  return true;
+}
+
+/** 灵丹：回复 1 点寿元 */
+export function playLingdan(p: Player, targetSeat?: number): void {
+  const t = targetSeat !== undefined ? G.players.find((x) => x.seat === targetSeat) : p;
+  if (!t) return;
+  heal(t, 1);
+  p.xiuwei += 1; // 感悟：服用灵丹
+  addLog(`${p.name} 以灵丹为 ${t.name} 回复寿元（感悟 +1）`, 'system');
+}
+
+/** 法宝：装备到对应槽（被替换的旧装备进入弃牌堆，避免重复换装循环） */
+export function equipFaqi(p: Player, card: Card): void {
+  const slot = card.sub as CardSub;
+  const old = p.equips[slot];
+  if (old) {
+    delete p.equips[slot];
+    G.discard.push(old);
+    addLog(`${p.name} 卸下【${old.name}】`, 'system');
+  }
+  p.equips[slot] = card;
+  addLog(`${p.name} 装备【${card.name}】`, 'system');
+}
+
+/** 灵地：占据 */
+export function occupyLingdi(p: Player, card: Card): void {
+  const id = card.name;
+  if (!p.lingdi.includes(id)) p.lingdi.push(id);
+  addLog(`${p.name} 占据灵地【${id}】（${lingdiTierOf(id)} 阶）`, 'system');
+}
+
+/** 符篆 / 阵法 / 秘术 效果 */
+export function playTrick(p: Player, card: Card, targetSeat?: number): boolean {
+  const target = targetSeat !== undefined ? G.players.find((x) => x.seat === targetSeat) : undefined;
+  switch (card.name) {
+    case '储物袋':
+      drawN(p, 2);
+      addLog(`${p.name} 使用【储物袋】，摸 2 张牌`, 'system');
+      return true;
+    case '破阵符':
+      if (!target || target.hand.length === 0) return false;
+      target.hand.pop();
+      addLog(`${p.name} 以【破阵符】弃置 ${target.name} 一张牌`, 'system');
+      return true;
+    case '心生蜂云剑':
+      if (!target || target.hand.length === 0) return false;
+      {
+        const taken = target.hand.pop();
+        if (taken) p.hand.push(taken);
+      }
+      addLog(`${p.name} 以【心生蜂云剑】取得 ${target.name} 一张牌`, 'system');
+      return true;
+    case '幻影夺心刺': {
+      if (!target) return false;
+      // 斗法：双方轮弃神通，简化为各弃 1 张神通，不足者受伤
+      const pa = p.hand.findIndex((c) => c.sub === 'shengtong' || c.sub === 'huo' || c.sub === 'lei');
+      const pb = target.hand.findIndex((c) => c.sub === 'shengtong' || c.sub === 'huo' || c.sub === 'lei');
+      if (pa < 0 && pb < 0) return true;
+      if (pa >= 0) p.hand.splice(pa, 1);
+      if (pb >= 0) target.hand.splice(pb, 1);
+      if (pa < 0) applyDamage(p, 1, 'normal', target);
+      else if (pb < 0) applyDamage(target, 1, 'normal', p);
+      addLog(`${p.name} 与 ${target.name} 斗法`, 'system');
+      return true;
+    }
+    case '十方风火归元大阵':
+      for (const other of G.players) {
+        if (other.seat === p.seat || !other.alive) continue;
+        const idx = other.hand.findIndex((c) => c.sub === 'shengtong' || c.sub === 'huo' || c.sub === 'lei');
+        if (idx >= 0) other.hand.splice(idx, 1);
+        else applyDamage(other, 1, 'fire', p);
+      }
+      addLog(`${p.name} 布下【十方风火归元大阵】`, 'system');
+      return true;
+    case '万剑钻心':
+      for (const other of G.players) {
+        if (other.seat === p.seat || !other.alive) continue;
+        const idx = other.hand.findIndex((c) => c.sub === 'hushen');
+        if (idx >= 0) other.hand.splice(idx, 1);
+        else applyDamage(other, 1, 'normal', p);
+      }
+      addLog(`${p.name} 施展【万剑钻心】`, 'system');
+      return true;
+    case '三木回心阵':
+      for (const other of G.players) if (other.alive) heal(other, 1);
+      addLog(`${p.name} 布下【三木回心阵】，众人回寿`, 'system');
+      return true;
+    case '命隐符':
+      addLog(`${p.name} 祭出【命隐符】，抵消一次符篆`, 'system');
+      return true;
+    case '青灵石蒲团':
+      for (const other of G.players) if (other.alive) drawN(other, 1);
+      addLog(`${p.name} 以【青灵石蒲团】普惠众人`, 'system');
+      return true;
+    case '碧火幽魂刀':
+      if (!target) return false;
+      applyDamage(target, 1, 'fire', p);
+      addLog(`${p.name} 以【碧火幽魂刀】攻 ${target.name}`, 'system');
+      return true;
+    case '银甲乐傀':
+      addLog(`${p.name} 驱使【银甲乐傀】`, 'system');
+      return true;
+    case '乌茎泽兰':
+      addLog(`${p.name} 布下【乌茎泽兰】`, 'system');
+      return true;
+    default:
+      return true;
+  }
+}
+
+/** 灵魂契约卡：立约 */
+export function playContract(p: Player, card: Card, targetSeat: number, defId: string): boolean {
+  const target = G.players.find((x) => x.seat === targetSeat);
+  if (!target) return false;
+  const chk = canSign(p, target);
+  if (!chk.ok) return false;
+  const c = signContract(p, target, defId);
+  return !!c;
+}
+
+/** 悟道卡：判定 */
+export function playWudao(p: Player): boolean {
+  const chk = canUseWudao(p);
+  if (!chk.ok) return false;
+  const r = judgeWudao(p);
+  if (r.success) {
+    sfx('wudao');
+    floatText(document.getElementById(`seat-${p.seat}`), `修为 +${r.xiuweiGain} 道心 +${r.daoxinGain}`);
+    // 悟道成功且满足条件 → 境界突破
+    if (canBreakthrough(p).ok) {
+      breakthroughRealm(p);
+      sfx('breakthrough');
+    }
+  } else {
+    floatText(document.getElementById(`seat-${p.seat}`), `修为 +${r.xiuweiGain}`, '#B8B0A0');
+  }
+  return true;
+}
+
+/** 出牌总入口 */
+export function playCard(p: Player, cardId: number, targetSeat?: number, extra?: string): boolean {
+  const idx = p.hand.findIndex((c) => c.id === cardId);
+  if (idx < 0) return false;
+  const card = p.hand[idx];
+
+  switch (card.type) {
+    case 'basic':
+      if (card.sub === 'shengtong' || card.sub === 'huo' || card.sub === 'lei') {
+        if (targetSeat === undefined) return false;
+        if (!playShengtong(p, card, targetSeat)) return false;
+      } else if (card.sub === 'lingdan') {
+        playLingdan(p, targetSeat);
+      } else if (card.sub === 'lingyao') {
+        playLingyao(p);
+      } else if (card.sub === 'wudao') {
+        if (!playWudao(p)) return false;
+      } else if (card.sub === 'hushen') {
+        return false; // 护身不主动打出
+      }
+      break;
+    case 'fu':
+      if (card.sub === 'linghunqiyue') {
+        if (targetSeat === undefined || !extra) return false;
+        if (!playContract(p, card, targetSeat, extra)) return false;
+      } else {
+        if (!playTrick(p, card, targetSeat)) return false;
+      }
+      break;
+    case 'faqi':
+      // 装备牌留在装备区，不进弃牌堆
+      p.hand.splice(idx, 1);
+      equipFaqi(p, card);
+      return true;
+    case 'lingdi':
+      occupyLingdi(p, card);
+      break;
+  }
+
+  p.hand.splice(idx, 1);
+  G.discard.push(card);
+  return true;
+}
+
+/** 弃牌阶段：超出手牌上限需弃 */
+export function needDiscard(p: Player): number {
+  return Math.max(0, p.hand.length - handLimit(p));
+}
+
+/** 闭关修炼：弃置全部手牌换修为（回合末可选） */
+export function closeDoor(p: Player): void {
+  const n = p.hand.length;
+  p.hand.splice(0, n);
+  G.discard.push(...[]);
+  p.xiuwei += 3 + (p.flags.hurtThisTurn ? -1 : 0);
+  p.flags.closedDoor = true;
+  addLog(
+    `${p.name} 闭关修炼，弃 ${n} 张手牌${p.flags.hurtThisTurn ? '（被打断，修为 -1）' : ''}`,
+    'system',
+  );
+}
+
+/** 突破提示（灵地不足时） */
+export function breakthroughHint(p: Player): string {
+  const chk = canBreakthrough(p);
+  if (chk.reason === 'lingdi') return `需 ${requiredLingdiTier(p)} 阶灵地方可突破`;
+  if (chk.reason === 'xiuwei') return '修为不足';
+  if (chk.reason === 'capped') return '已至化神大圆满';
+  return '可突破';
+}

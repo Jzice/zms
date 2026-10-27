@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>掌门杀 · 修真门派掌门路</title>
+<script type="module" src="/main.ts"></script>
+</head>
+<body data-mode="night" data-theme="jade">
+<script>
+/* 首帧主题兜底：整页重载时模块解析完成前已带正确主题，避免闪现无主题状态 */
+(function () {
+  try {
+    var p = JSON.parse(localStorage.getItem('zhangmensha_profile_v1') || '{}');
+    var m = ['day', 'night', 'dusk'].indexOf(p.themeMode) >= 0 ? p.themeMode : 'night';
+    if (document.body) document.body.setAttribute('data-mode', m);
+    var s = ['jade', 'gold', 'azure', 'purple', 'red', 'green'].indexOf(p.themeStyle) >= 0 ? p.themeStyle : 'jade';
+    if (document.body) document.body.setAttribute('data-theme', s);
+  } catch (e) { /* 保持默认 */ }
+})();
+</script>
+
+<!-- 固定顶栏 -->
+<div id="topBar">
+  <div class="tb-row tb-row-top">
+    <div class="tb-brand">
+      <span class="tb-logo">🏔️</span>
+      <span class="tb-brand-text">
+        <span class="tb-title">掌门杀<span class="tb-ver" id="tbVersion" title="当前版本"></span></span>
+        <span class="tb-sub">修真门派 · 四方博弈</span>
+      </span>
+    </div>
+    <span class="tb-stats">
+      <span class="tb-stat" title="段位"><span class="tb-stat-ic">🏅</span><span id="tbLevel">练气</span></span>
+      <span class="tb-stat" title="积分">
+        <span class="tb-stat-ic">⭐</span><span id="tbScore">0 分</span>
+        <span class="tb-progress"><span class="tb-progress-bar" id="tbProgress"></span></span>
+      </span>
+    </span>
+  </div>
+  <div class="tb-row tb-row-main">
+    <div class="tb-right">
+      <span class="tb-actions">
+        <button class="tb-icon" id="soundToggle" onclick="toggleSound()" title="音效开关">🔊</button>
+        <button class="tb-icon" onclick="openThemePanel()" title="主题设置">🎨</button>
+        <button class="tb-icon" onclick="openLlmSettings()" title="大模型设置">🤖</button>
+        <button class="tb-icon" onclick="openRules()" title="规则说明">📖</button>
+        <button class="tb-icon" onclick="openCodex()" title="灵兽图鉴">🐾</button>
+        <button class="tb-icon tb-game-only" onclick="exitGame()" title="退出重开">🚪</button>
+      </span>
+    </div>
+    <button class="tb-user-chip" onclick="openProfile()" title="查看我的档案">
+      <span class="tb-avatar" id="tbAvatar">🧙</span>
+      <span class="tb-user-meta"><span class="tb-uname" id="tbName">本座</span></span>
+    </button>
+  </div>
+</div>
+
+<!-- 大厅 -->
+<div id="screenLobby" class="screen active">
+  <div class="panel">
+    <h3>◈ 选择阵营与地域 ◈</h3>
+    <div class="opt-row" id="campPicker"></div>
+    <div class="opt-row" id="regionPicker"></div>
+  </div>
+  <div class="panel">
+    <h3>◈ 势力层级 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400">（超级宗门 / 宗门 / 家族 / 附庸）</span></h3>
+    <div id="powerTree"></div>
+  </div>
+  <div class="panel">
+    <h3>◈ 选择你的角色 ◈ <span id="charHint" style="font-size:10px;color:var(--muted);font-weight:400"></span></h3>
+    <div class="char-grid" id="charGrid"></div>
+    <div class="char-preview" id="charPreview"></div>
+  </div>
+  <div class="panel" id="beastPanel" style="display:none">
+    <h3>◈ 择一伴兽 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400">（御兽门修士须携伴兽同行）</span></h3>
+    <div class="beast-row" id="beastRow"></div>
+  </div>
+  <div class="panel">
+    <h3>◈ 身份池 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400">（按四方勾选，随人数自动配比）</span></h3>
+    <div id="rolePool"></div>
+    <div class="scope-hint" id="roleQuotaHint"></div>
+  </div>
+  <div class="panel">
+    <h3>◈ 对局设置 ◈</h3>
+    <div class="slider-row">
+      <span class="slider-end">4</span>
+      <input type="range" id="countSlider" min="4" max="10" step="1" value="6">
+      <span class="slider-end">10</span>
+      <span class="slider-value" id="countValue">6 人</span>
+    </div>
+    <div class="lobby-btns">
+      <button class="btn btn-accent btn-cta" onclick="startSingle()">▶ 开始单机对局</button>
+    </div>
+  </div>
+  <div class="panel">
+    <h3>◈ 联机对战 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400">（6 位房号，房主权威同步）</span></h3>
+    <div class="input-row">
+      <input type="text" id="joinCode" placeholder="6 位房间号" maxlength="6" inputmode="numeric">
+    </div>
+    <div class="lobby-btns" style="justify-content:flex-start;margin-top:6px">
+      <button class="btn btn-accent" onclick="createRoomUI()" id="createRoomBtn">📡 创建房间</button>
+      <button class="btn" onclick="joinRoomUI()" id="joinRoomBtn">🔌 加入房间</button>
+      <button class="btn" onclick="startNetUI()" id="netStartBtn" style="display:none">▶ 开始联机</button>
+    </div>
+    <div id="roomInfo" style="margin-top:8px;font-size:12px;color:var(--gold)"></div>
+  </div>
+  <div class="panel" id="llmSetupPanel"></div>
+</div>
+
+<!-- 游戏界面 -->
+<div id="screenGame" class="screen">
+  <div class="game-status-bar" id="gameStatusBar">
+    <span id="gsTurn">回合：—</span>
+    <span id="gsPhase"></span>
+    <span id="gsRole"></span>
+    <span id="gsConn"></span>
+    <button class="gs-exit" onclick="exitGame()" title="退出重开">🚪 退出</button>
+  </div>
+  <div class="game-main">
+    <div class="table-area" id="tableArea">
+      <div class="seat-ring" id="seatRing"></div>
+      <div class="table-center">
+        <div class="pile">
+          <div class="pile-label">牌堆</div>
+          <div class="pile-stack"><div class="card-back-pile"></div><div class="card-back-pile"></div><div class="card-back-pile"></div></div>
+          <div class="pile-count" id="deckCount">0</div>
+        </div>
+        <div class="play-zone" id="playZoneCards">
+          <div class="play-zone-label">出 牌 区</div>
+          <span class="play-zone-empty">— 牌桌中央 —</span>
+        </div>
+        <div class="pile">
+          <div class="pile-label">弃牌</div>
+          <div class="pile-stack"><div class="card-back-pile" style="filter:brightness(.6)"></div></div>
+          <div class="pile-count" id="discardCount">0</div>
+        </div>
+      </div>
+    </div>
+    <div class="side-panel">
+      <div class="play-log-panel" id="playLogPanel">
+        <div class="panel-title">
+          <span>战 报 <span class="badge" id="playLogBadge">0</span></span>
+          <button class="panel-toggle" onclick="togglePanel('playLogPanel')">▾</button>
+        </div>
+        <div class="play-log-list" id="playLogList"></div>
+      </div>
+      <div class="chat-panel" id="chatPanel">
+        <div class="panel-title">
+          <span>聊 天 室 <span class="badge">💬</span></span>
+          <button class="panel-toggle" onclick="togglePanel('chatPanel')">▾</button>
+        </div>
+        <div class="chat-body">
+          <div class="chat-list" id="chatList"></div>
+          <div class="chat-input-row">
+            <input id="chatInput" placeholder="说点什么…" maxlength="40" onkeydown="if(event.key==='Enter')sendChat()">
+            <button onclick="sendChat()">发送</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="center-area" id="centerArea">
+    <div class="action-hint" id="actionHint"></div>
+    <div class="action-btns" id="actionBtns"></div>
+    <span class="timer-chip" id="timerChip"></span>
+  </div>
+  <div class="hand-row" id="handRow"></div>
+</div>
+
+<!-- 悟道 / 诗词感悟弹层 -->
+<div id="verseModal" class="rules-modal">
+  <div class="rules-box verse-box">
+    <div class="verse-head"><span id="verseTitle">悟道</span><button class="rules-close" onclick="closeVerse()">✕</button></div>
+    <div class="verse-body" id="verseBody"></div>
+    <div class="menu-footer"><button class="btn btn-sm btn-accent" onclick="closeVerse()">继续</button></div>
+  </div>
+</div>
+
+<!-- 灵魂契约弹层（羊皮纸） -->
+<div id="contractModal" class="rules-modal">
+  <div class="rules-box contract-box">
+    <div class="verse-head"><span>📜 灵魂契约</span><button class="rules-close" onclick="closeContractModal()">✕</button></div>
+    <div class="verse-body" id="contractBody"></div>
+  </div>
+</div>
+
+<!-- 标记弹窗 -->
+<div id="markModal">
+  <div class="mark-box">
+    <div class="mark-title">标记 <span id="markTargetName"></span> 的身份</div>
+    <div class="mark-options" id="markOptions"></div>
+    <button class="btn btn-sm" onclick="closeMarkMenu()" style="width:100%">取消</button>
+  </div>
+</div>
+
+<!-- 结算 -->
+<div id="settleModal" class="rules-modal">
+  <div class="rules-box" style="max-width:620px">
+    <div class="rules-header"><span id="settleTitle">本局结算</span><button onclick="closeSettle()" class="rules-close">✕</button></div>
+    <div class="rules-content" id="settleBody"></div>
+    <div class="menu-footer">
+      <button class="btn btn-sm btn-accent" onclick="againGame()">再战一局</button>
+      <button class="btn btn-sm" onclick="backToLobby()">返回大厅</button>
+    </div>
+  </div>
+</div>
+
+<!-- 规则 / 图鉴 / 档案 -->
+<div id="rulesModal" class="rules-modal">
+  <div class="rules-box">
+    <div class="rules-header"><span>📖 掌门杀规则说明</span><button onclick="closeRules()" class="rules-close">✕</button></div>
+    <div class="rules-tabs">
+      <button class="rule-tab active" data-tab="basic" onclick="switchRulesTab('basic')">基本规则</button>
+      <button class="rule-tab" data-tab="roles" onclick="switchRulesTab('roles')">身份四方</button>
+      <button class="rule-tab" data-tab="cards" onclick="switchRulesTab('cards')">卡牌法宝</button>
+      <button class="rule-tab" data-tab="contract" onclick="switchRulesTab('contract')">灵魂契约</button>
+      <button class="rule-tab" data-tab="realm" onclick="switchRulesTab('realm')">境界灵地</button>
+    </div>
+    <div class="rules-content" id="rulesContent"></div>
+  </div>
+</div>
+
+<div id="codexModal" class="rules-modal">
+  <div class="rules-box" style="max-width:640px">
+    <div class="rules-header"><span>🐾 灵兽图鉴</span><button onclick="closeCodex()" class="rules-close">✕</button></div>
+    <div class="rules-content" id="codexBody"></div>
+  </div>
+</div>
+
+<div id="profileModal" class="rules-modal">
+  <div class="rules-box" style="max-width:540px">
+    <div class="rules-header"><span>我的档案</span><button onclick="closeProfile()" class="rules-close">✕</button></div>
+    <div class="rules-content" id="profileBody"></div>
+  </div>
+</div>
+
+<div class="fx-layer" id="fxLayer"></div>
+
+<!-- 主题设置面板 -->
+<aside id="themePanel" class="theme-panel" onclick="if(event.target===this)closeThemePanel()"></aside>
+
+<!-- 大模型接管设置 -->
+<div class="modal-overlay" id="llmSettingsModal" onclick="if(event.target===this)closeLlmSettings()">
+  <div class="modal-card">
+    <div class="modal-head"><span>🤖 大模型接管 AI 设置</span><button class="modal-close" onclick="closeLlmSettings()">✕</button></div>
+    <div class="modal-body" id="llmSettingsBody"></div>
+  </div>
+</div>
+</body>
+</html>

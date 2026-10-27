@@ -1,0 +1,24 @@
+# 依赖
+node_modules/
+
+# 构建产物（npm run build 可重新生成）
+dist/
+_site/
+release/
+
+# 日志与系统文件
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# 编辑器
+.vscode/
+.idea/
+*.swp
+
+# 智能体工作区数据（本地，不入库）
+.codebuddy/
+
+# 测试/作业临时文件
+jobs.json
