@@ -376,7 +376,7 @@ body {
 }
 /* 座位卡不响应悬停：不加位移/缩放/阴影反馈，当前行动者仅以 .p-card.turn 金光呼吸标识（对齐 learn_kill） */
 .seat-cur {
-  box-shadow: 0 0 0 2px var(--gold), 0 6px 18px rgba(212, 175, 55, 0.28);
+  box-shadow: 0 0 0 2px #f5c542, 0 6px 18px rgba(245, 197, 66, 0.28);
 }
 .seat-target { box-shadow: 0 0 0 2px var(--jade); }
 .seat-dead { filter: grayscale(1) brightness(.55); }
@@ -960,8 +960,12 @@ body[data-theme="green"]  { --gold: #5fd07a; --gold-dim: #2e8a4a; --accent-stron
 .seat {
   position: absolute; transform: translate(-50%, -50%); transition: left .4s, top .4s; z-index: 3;
   width: auto; min-height: 0; padding: 0; background: none; border: none; border-radius: 0;
-  box-shadow: none; cursor: pointer;
+  /* 旧 .seat 规则残留 overflow:hidden，会把 .p-card 的外发光与 1px 外描边整圈裁掉；
+     新座位卡结构必须 overflow:visible 才能显示发光（当前玩家高亮失效的真正原因） */
+  box-shadow: none; overflow: visible; cursor: pointer;
 }
+/* 旧座位的 inset:-2px 伪边框，在新 .p-card 结构下会与外发光叠边，停用 */
+.seat::before { display: none; }
 .seat-targetable { z-index: 6; }
 .seat-targetable .p-card { border-color: #e74c3c !important; animation: targetPulse 1.2s infinite; }
 @keyframes targetPulse { 0%, 100% { box-shadow: 0 0 10px rgba(231, 76, 60, .5); } 50% { box-shadow: 0 0 26px rgba(231, 76, 60, .95); } }
@@ -970,17 +974,19 @@ body[data-theme="green"]  { --gold: #5fd07a; --gold-dim: #2e8a4a; --accent-stron
   width: 104px; border-radius: 9px; padding: 5px; position: relative; transition: all .25s;
   border: 2px solid var(--faction-color, var(--gold-dim));
   background: linear-gradient(180deg, rgba(255, 255, 255, .05), transparent 40%), linear-gradient(160deg, #2a1a10, #0e0603);
-  box-shadow: inset 0 0 20px rgba(0, 0, 0, .6), 0 3px 12px rgba(0, 0, 0, .5);
+  /* 常驻浅金外描边：默认 jade 主题下阵营色边偏青、与绿桌低对比，加一圈固定浅金保证每张卡都有可见边（不改主色调） */
+  box-shadow: 0 0 0 1px rgba(245, 197, 66, .35), inset 0 0 20px rgba(0, 0, 0, .6), 0 3px 12px rgba(0, 0, 0, .5);
 }
 .p-card.turn {
-  border-width: 3px; border-color: var(--gold); transform: scale(1.07); z-index: 4;
+  border-width: 3px; border-color: #f5c542; transform: scale(1.07); z-index: 4;
+  box-shadow: 0 0 0 1px rgba(245, 197, 66, .5), 0 0 26px #f5c542, 0 0 50px #f5c542, inset 0 0 20px rgba(0, 0, 0, .6);
   animation: turnGlow 1.6s ease-in-out infinite;
 }
 @keyframes turnGlow {
-  0%, 100% { box-shadow: 0 0 24px var(--gold), 0 0 46px var(--faction-color), inset 0 0 20px rgba(0, 0, 0, .6); }
-  50% { box-shadow: 0 0 40px var(--gold), 0 0 82px var(--gold), inset 0 0 20px rgba(0, 0, 0, .6); }
+  0%, 100% { box-shadow: 0 0 0 1px rgba(245, 197, 66, .5), 0 0 18px #f5c542, 0 0 40px #f5c542, inset 0 0 20px rgba(0, 0, 0, .6); border-color: #f5c542; }
+  50% { box-shadow: 0 0 0 1px rgba(245, 197, 66, .6), 0 0 34px #f5c542, 0 0 72px #f5c542, inset 0 0 20px rgba(0, 0, 0, .6); border-color: #ffe0a0; }
 }
-.p-card.turn .pname { color: var(--gold); }
+.p-card.turn .pname { color: #f5c542; }
 .p-card.dead { opacity: .28; filter: grayscale(1); }
 .p-card.thinking { border-color: #f5c542 !important; animation: thinkPulse 1.4s ease-in-out infinite; }
 @keyframes thinkPulse {
@@ -1860,6 +1866,11 @@ body[data-theme="green"]  { --gold: #5fd07a; --gold-dim: #2e8a4a; --accent-stron
 @keyframes hintIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .play-hint .ph-title { color: var(--gold); font-weight: 700; margin-right: 6px; }
 .play-hint.fade-out { opacity: 0; transition: opacity .5s; }
+
+/* 通用确认弹窗（危险操作） */
+.confirm-box { max-width: 360px; }
+.confirm-text { font-size: 12px; line-height: 1.75; color: var(--text); padding: 6px 2px 12px; }
+.confirm-actions { display: flex; gap: 8px; justify-content: flex-end; }
 
 /* ============================================================
    战报头像 + 关键词着色（learn_kill 同款）

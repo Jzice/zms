@@ -22,6 +22,8 @@ declare global {
     closeMarkMenu(): void;
     openMarkMenu(seat: number): void;
     closeSettle(): void;
+    closeConfirm(): void;
+    confirmAccept(): void;
     switchRulesTab(tab: string): void;
     setRoleMarkUI(seat: number, roleId: string): void;
     togglePanel(id: string): void;

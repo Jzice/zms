@@ -133,6 +133,27 @@ check(game.hand > 0, `手牌区已渲染（${game.hand} 张）`);
 check(game.logs > 0, `战报已渲染（${game.logs} 条）`);
 check(!!game.snapshot, '调试快照可用');
 
+console.log('\n=== 闭关二次确认 ===');
+const closeCfm = await page.evaluate(() => {
+  const before = document.querySelectorAll('#handRow .card').length;
+  const btn = [...document.querySelectorAll('#actionBtns .btn')].find((b) => b.textContent?.includes('闭关'));
+  btn?.click();
+  const modal = document.getElementById('confirmModal');
+  return {
+    hasBtn: !!btn,
+    before,
+    open: modal ? getComputedStyle(modal).display !== 'none' : false,
+    hand: document.querySelectorAll('#handRow .card').length,
+  };
+});
+await page.evaluate(() => window.closeConfirm());
+const closeAfter = await page.evaluate(() => document.querySelectorAll('#handRow .card').length);
+check(closeCfm.hasBtn, '出牌阶段存在「闭关(弃手牌)」按钮');
+check(
+  closeCfm.open && closeCfm.hand === closeCfm.before && closeAfter === closeCfm.before,
+  `闭关需二次确认，取消不丢手牌（${closeCfm.before} 张）`,
+);
+
 console.log('\n=== 标记 / 卡牌态 ===');
 const uiBits = await page.evaluate(() => {
   const markBtns = document.querySelectorAll('.p-mark-btn').length;

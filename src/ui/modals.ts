@@ -166,3 +166,27 @@ export function openMarkMenu(seat: number): void {
 export function closeMarkMenu(): void {
   show('markModal', false);
 }
+
+/* ---------------- 通用确认（危险操作二次确认） ---------------- */
+
+let confirmCb: (() => void) | null = null;
+
+export function confirmDialog(text: string, onOk: () => void, title = '确认'): void {
+  const t = document.getElementById('confirmTitle');
+  const b = document.getElementById('confirmText');
+  if (t) t.textContent = title;
+  if (b) b.textContent = text;
+  confirmCb = onOk;
+  show('confirmModal', true);
+}
+
+export function closeConfirm(): void {
+  confirmCb = null;
+  show('confirmModal', false);
+}
+
+export function confirmAccept(): void {
+  const cb = confirmCb;
+  closeConfirm();
+  cb?.();
+}

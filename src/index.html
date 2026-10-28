@@ -240,6 +240,20 @@
   </div>
 </div>
 
+<!-- 通用确认弹窗（危险操作） -->
+<div id="confirmModal" class="rules-modal">
+  <div class="rules-box confirm-box">
+    <div class="rules-header"><span id="confirmTitle">确认</span><button class="rules-close" onclick="closeConfirm()">✕</button></div>
+    <div class="rules-content">
+      <div class="confirm-text" id="confirmText"></div>
+      <div class="confirm-actions">
+        <button class="btn" onclick="closeConfirm()">取消</button>
+        <button class="btn btn-accent" onclick="confirmAccept()">确定</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- 规则 / 图鉴 / 档案 -->
 <div id="rulesModal" class="rules-modal">
   <div class="rules-box">

@@ -6,6 +6,7 @@ import './style.css';
 
 import { G, resetG } from './game/state';
 import { render, setScreen, markChatSeen, markNotifySeen } from './ui/render';
+import { initLiveRender } from './ui/liveRender';
 import { renderLobby, getSelections, playerCount, setLobbyMode } from './ui/lobby';
 import {
   selectCard,
@@ -30,6 +31,8 @@ import {
   closeMarkMenu,
   openMarkMenu,
   switchRulesTab,
+  closeConfirm,
+  confirmAccept,
 } from './ui/modals';
 import { closeSettle } from './ui/settle';
 import {
@@ -123,6 +126,8 @@ window.closeVerse = closeVerse;
 window.closeContractModal = closeContractModal;
 window.closeMarkMenu = closeMarkMenu;
 window.openMarkMenu = openMarkMenu;
+window.closeConfirm = closeConfirm;
+window.confirmAccept = confirmAccept;
 window.closeSettle = closeSettle;
 window.switchRulesTab = switchRulesTab;
 window.togglePanel = togglePanel;
@@ -330,6 +335,9 @@ function init(): void {
   renderLobby();
   renderLlmSetupPanel();
   render();
+
+  // AI 回合期间也保持 UI 实时刷新（座位高亮跟随当前行动者 G.current）
+  initLiveRender();
 
   // 人数滑块联动
   const slider = document.getElementById('countSlider');

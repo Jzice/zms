@@ -12,6 +12,7 @@ import { endHumanTurn } from '../game/loop';
 import { activeSkillsOf, canUseSkill } from '../game/skillEngine';
 import { useSkill } from '../game/skillEngine';
 import { render } from './render';
+import { confirmDialog } from './modals';
 import { sfx } from '../core/sound';
 
 /** 本地玩家（非 AI） */
@@ -88,7 +89,7 @@ export function renderActionBtns(): void {
   if (isMyTurn) {
     parts.push(`<button class="btn btn-accent" onclick="confirmPlay()">出牌</button>`);
     parts.push(`<button class="btn" onclick="doWudao()">悟道</button>`);
-    parts.push(`<button class="btn" onclick="doCloseDoor()">闭关</button>`);
+    parts.push(`<button class="btn" onclick="doCloseDoor()">闭关(弃手牌)</button>`);
     parts.push(`<button class="btn" onclick="signContractUI()">立约</button>`);
     // 主动技
     for (const sk of activeSkillsOf(p)) {
@@ -149,12 +150,21 @@ export function doWudao(): void {
   render();
 }
 
-/** 闭关 */
+/** 闭关：弃置全部手牌换修为（危险操作，需二次确认） */
 export function doCloseDoor(): void {
   const p = localPlayer();
   if (!p) return;
-  closeDoor(p);
-  render();
+  if (G.over || G.current !== p.seat || G.phase !== 'play') return;
+  const n = p.hand.length;
+  if (n === 0) return;
+  confirmDialog(
+    `闭关将弃置全部 ${n} 张手牌换取修为，且本回合无法再出牌。确定闭关？`,
+    () => {
+      closeDoor(p);
+      render();
+    },
+    '闭关修炼',
+  );
 }
 
 /** 结束回合 */
